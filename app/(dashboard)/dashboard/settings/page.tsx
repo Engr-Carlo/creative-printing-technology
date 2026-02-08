@@ -1,11 +1,11 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Settings, User, Bell, Lock, Shield, Building2 } from "lucide-react";
-import { updateProfile, updatePassword } from "@/app/actions/users";
+import { ProfileForm } from "@/components/ProfileForm";
+import { PasswordForm } from "@/components/PasswordForm";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -87,52 +87,26 @@ export default async function SettingsPage() {
             </div>
 
             <div className="border-t pt-6">
-              <form action={updateProfile} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      defaultValue={session.user.name || ""}
-                      placeholder="Enter your name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      defaultValue={session.user.email || ""}
-                      placeholder="Enter your email"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Input
-                    id="role"
-                    defaultValue={
-                      session.user.role === "ADMIN" ? "Administrator" : 
-                      session.user.role === "ENCODER" ? "Encoder" : "Employee"
-                    }
-                    disabled
-                    className="bg-gray-50"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Contact an administrator to change your role
-                  </p>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <Button type="submit" size="lg">
-                    Save Changes
-                  </Button>
-                  <Button type="reset" variant="outline" size="lg">
-                    Cancel
-                  </Button>
-                </div>
-              </form>
+              <div className="space-y-4 mb-4">
+                <Label htmlFor="role">Role</Label>
+                <Input
+                  id="role"
+                  defaultValue={
+                    session.user.role === "ADMIN" ? "Administrator" : 
+                    session.user.role === "ENCODER" ? "Encoder" : "Employee"
+                  }
+                  disabled
+                  className="bg-gray-50"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Contact an administrator to change your role
+                </p>
+              </div>
+              
+              <ProfileForm 
+                userName={session.user.name || ""} 
+                userEmail={session.user.email || ""}
+              />
             </div>
           </CardContent>
         </Card>
@@ -150,43 +124,7 @@ export default async function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={updatePassword} className="space-y-4 max-w-xl">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <Input
-                id="currentPassword"
-                name="currentPassword"
-                type="password"
-                placeholder="Enter current password"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <Input
-                id="newPassword"
-                name="newPassword"
-                type="password"
-                placeholder="Enter new password"
-                required
-                minLength={6}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="Confirm new password"
-                required
-                minLength={6}
-              />
-            </div>
-            <Button type="submit" size="lg">
-              Update Password
-            </Button>
-          </form>
+          <PasswordForm />
         </CardContent>
       </Card>
 

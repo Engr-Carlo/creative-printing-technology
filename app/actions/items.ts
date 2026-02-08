@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-export async function createItem(formData: FormData) {
+export async function createItem(prevState: any, formData: FormData) {
   const session = await auth();
   if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "ENCODER")) {
     return { error: "Unauthorized" };

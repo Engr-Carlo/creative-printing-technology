@@ -100,7 +100,7 @@ export async function deleteUser(userId: string) {
   }
 }
 
-export async function updateProfile(formData: FormData) {
+export async function updateProfile(prevState: any, formData: FormData) {
   const session = await auth();
   if (!session?.user) {
     return { error: "Unauthorized" };
@@ -123,7 +123,7 @@ export async function updateProfile(formData: FormData) {
   }
 }
 
-export async function updatePassword(formData: FormData) {
+export async function updatePassword(prevState: any, formData: FormData) {
   const session = await auth();
   if (!session?.user) {
     return { error: "Unauthorized" };
