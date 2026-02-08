@@ -197,7 +197,7 @@ export default async function AnalyticsPage() {
                   PENDING: { label: "Pending", color: "from-yellow-500 to-yellow-600" },
                   IN_PROGRESS: { label: "In Progress", color: "from-blue-500 to-blue-600" },
                   COMPLETED: { label: "Completed", color: "from-green-500 to-green-600" },
-                  CANCELLED: { label: "Cancelled", color: "from-red-500 to-red-600" },
+                  DELAYED: { label: "Delayed", color: "from-red-500 to-red-600" },
                 };
 
                 const config = statusConfig[status.status] || { label: status.status, color: "from-gray-500 to-gray-600" };

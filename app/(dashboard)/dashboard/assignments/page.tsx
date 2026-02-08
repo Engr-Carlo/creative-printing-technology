@@ -25,7 +25,7 @@ async function getAssignments() {
         },
         user: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { assignedAt: "desc" },
     }),
   ]);
 
@@ -185,7 +185,7 @@ export default async function AssignmentsPage() {
                         </span>
                       </td>
                       <td className="py-4 px-4 text-sm text-gray-600">
-                        {new Date(assignment.createdAt).toLocaleDateString()}
+                        {new Date(assignment.assignedAt).toLocaleDateString()}
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
