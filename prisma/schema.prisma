@@ -1,0 +1,233 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+  ENCODER
+}
+
+enum DepartmentType {
+  CARDBOARD
+  MANUAL
+  LABEL
+  BOOKBIND
+  OTHER_ITEMS
+}
+
+enum ItemStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+}
+
+enum ProcessStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+}
+
+enum DelayCategory {
+  MACHINE_BREAKDOWN
+  MATERIAL_SHORTAGE
+  POWER_OUTAGE
+  QUALITY_ISSUE
+  STAFFING
+  OTHER
+}
+
+// Models
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  password      String
+  role          UserRole @default(EMPLOYEE)
+  isActive      Boolean  @default(true)
+  
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id])
+  
+  // Relations
+  assignedItems    ItemAssignment[]
+  assignedProcesses Process[] @relation("ProcessAssignee")
+  processUpdates   ProcessUpdate[]
+  notes            Note[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([email])
+  @@index([departmentId])
+}
+
+model Department {
+  id    String         @id @default(cuid())
+  name  String
+  type  DepartmentType
+  
+  // Relations
+  items    Item[]
+  machines Machine[]
+  users    User[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([type])
+}
+
+model Item {
+  id            String     @id @default(cuid())
+  name          String
+  itemNumber    String     @unique
+  type          String
+  quantity      Int
+  color         String?
+  customer      String
+  targetOutput  Int
+  currentOutput Int        @default(0)
+  deadline      DateTime
+  status        ItemStatus @default(PENDING)
+  
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  
+  // Relations
+  processes   Process[]
+  assignments ItemAssignment[]
+  notes       Note[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([departmentId, status])
+  @@index([deadline])
+  @@index([customer])
+  @@index([itemNumber])
+}
+
+model Process {
+  id     String        @id @default(cuid())
+  name   String        // "P1", "P2", etc.
+  order  Int           // 1, 2, 3... for sequential ordering
+  status ProcessStatus @default(NOT_STARTED)
+  
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  
+  machineId String?
+  machine   Machine? @relation(fields: [machineId], references: [id])
+  
+  assignedToId String?
+  assignedTo   User?   @relation("ProcessAssignee", fields: [assignedToId], references: [id])
+  
+  // Relations
+  updates     ProcessUpdate[]
+  delayReasons DelayReason[]
+  
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@unique([itemId, name])
+  @@index([itemId, order])
+  @@index([status])
+}
+
+model Machine {
+  id   String @id @default(cuid())
+  name String // "M1", "M2", "M3", "TW102", etc.
+  type String
+  
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  
+  // Relations
+  processes Process[]
+  
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([departmentId])
+  @@index([isActive])
+}
+
+model ItemAssignment {
+  id String @id @default(cuid())
+  
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  assignedAt DateTime @default(now())
+  
+  @@unique([itemId, userId])
+  @@index([userId])
+}
+
+model ProcessUpdate {
+  id      String @id @default(cuid())
+  comment String? @db.Text
+  
+  processId String
+  process   Process @relation(fields: [processId], references: [id], onDelete: Cascade)
+  
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  
+  oldStatus ProcessStatus
+  newStatus ProcessStatus
+  
+  createdAt DateTime @default(now())
+  
+  @@index([processId, createdAt])
+  @@index([userId])
+}
+
+model DelayReason {
+  id       String        @id @default(cuid())
+  category DelayCategory
+  details  String?       @db.Text
+  
+  processId String
+  process   Process @relation(fields: [processId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([processId])
+  @@index([category])
+}
+
+model Note {
+  id      String @id @default(cuid())
+  content String @db.Text
+  
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([itemId, createdAt])
+}
