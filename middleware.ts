@@ -1,23 +1,41 @@
-import { auth } from "@/lib/auth";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export default auth((req) => {
-  const isLoggedIn = !!req.auth;
-  const isOnDashboard = req.nextUrl.pathname.startsWith("/dashboard");
-  const isOnLogin = req.nextUrl.pathname === "/login";
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  // Check for session token cookie
+  const sessionToken = 
+    request.cookies.get("authjs.session-token") ||
+    request.cookies.get("__Secure-authjs.session-token");
+  
+  const isLoggedIn = !!sessionToken;
+  const isOnDashboard = pathname.startsWith("/dashboard");
+  const isOnLogin = pathname === "/login";
 
   // Redirect unauthenticated users trying to access dashboard
   if (isOnDashboard && !isLoggedIn) {
-    return Response.redirect(new URL("/login", req.nextUrl));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   // Redirect authenticated users away from login page
   if (isOnLogin && isLoggedIn) {
-    return Response.redirect(new URL("/dashboard", req.nextUrl));
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  return;
-});
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - api routes
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public files (public folder)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.svg|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.webp).*)",
+  ],
 };
