@@ -4,7 +4,10 @@ import { signIn } from "@/lib/auth";
 import { loginSchema } from "@/lib/validations/auth.schema";
 import { AuthError } from "next-auth";
 
-export async function authenticate(formData: FormData) {
+export async function authenticate(
+  prevState: { error: string | null } | null,
+  formData: FormData
+) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
@@ -23,7 +26,7 @@ export async function authenticate(formData: FormData) {
       redirectTo: "/dashboard",
     });
     
-    return { success: true };
+    return { error: null };
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useFormState } from "react-dom";
 import { useFormStatus } from "react-dom";
 import { authenticate } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -30,16 +30,7 @@ function SubmitButton() {
 }
 
 export default function LoginPage() {
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit(formData: FormData) {
-    setError(null);
-    const result = await authenticate(formData);
-    
-    if (result?.error) {
-      setError(result.error);
-    }
-  }
+  const [state, formAction] = useFormState(authenticate, { error: null });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100 flex items-center justify-center p-4 relative overflow-hidden">
@@ -67,7 +58,7 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form action={handleSubmit} className="space-y-5">
+            <form action={formAction} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-semibold">Email Address</Label>
                 <Input
@@ -91,13 +82,13 @@ export default function LoginPage() {
                 />
               </div>
               
-              {error && (
+              {state?.error && (
                 <div className="bg-destructive/10 border-2 border-destructive/50 text-destructive px-4 py-3 rounded-lg text-sm font-medium">
                   <div className="flex items-center gap-2">
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
-                    {error}
+                    {state.error}
                   </div>
                 </div>
               )}
