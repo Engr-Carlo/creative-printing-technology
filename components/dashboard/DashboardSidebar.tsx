@@ -21,19 +21,32 @@ interface DashboardSidebarProps {
 }
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Items", href: "/dashboard/items", icon: Package },
-  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, adminOnly: true },
-  { name: "Users", href: "/dashboard/users", icon: Users, adminOnly: true },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  // Admin navigation
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN"] },
+  { name: "Items", href: "/dashboard/items", icon: Package, roles: ["ADMIN"] },
+  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["ADMIN"] },
+  { name: "Users", href: "/dashboard/users", icon: Users, roles: ["ADMIN"] },
+  
+  // Encoder navigation
+  { name: "Dashboard", href: "/dashboard/encoder", icon: LayoutDashboard, roles: ["ENCODER"] },
+  { name: "Items", href: "/dashboard/items", icon: Package, roles: ["ENCODER"] },
+  { name: "Assignments", href: "/dashboard/assignments", icon: Users, roles: ["ENCODER"] },
+  
+  // Employee navigation
+  { name: "Dashboard", href: "/dashboard/employee", icon: LayoutDashboard, roles: ["EMPLOYEE"] },
+  { name: "My Items", href: "/dashboard/my-items", icon: Package, roles: ["EMPLOYEE"] },
+  { name: "My Processes", href: "/dashboard/my-processes", icon: LayoutDashboard, roles: ["EMPLOYEE"] },
+  
+  // Common for all
+  { name: "Settings", href: "/dashboard/settings", icon: Settings, roles: ["ADMIN", "ENCODER", "EMPLOYEE"] },
 ];
 
 export default function DashboardSidebar({ user }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const isAdmin = user.role === "ADMIN";
+  const userRole = user.role || "EMPLOYEE";
 
-  const filteredNav = navigation.filter(
-    (item) => !item.adminOnly || isAdmin
+  const filteredNav = navigation.filter((item) =>
+    item.roles.includes(userRole)
   );
 
   return (
