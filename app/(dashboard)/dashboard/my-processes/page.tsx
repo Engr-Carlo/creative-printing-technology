@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Clock, CheckCircle2, XCircle, AlertCircle, PlayCircle } from "lucide-react";
 import prisma from "@/lib/prisma";
+import { ProcessStatusButton } from "@/components/ProcessStatusButton";
+import Link from "next/link";
 
 async function getMyProcesses(userId: string) {
   return prisma.process.findMany({
@@ -180,19 +182,16 @@ export default async function MyProcessesPage() {
                         </td>
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-2">
-                            {process.status === "NOT_STARTED" && (
-                              <Button size="sm" className="text-xs">
-                                Start Process
+                            <ProcessStatusButton
+                              processId={process.id}
+                              currentStatus={process.status}
+                              processName={process.name}
+                            />
+                            <Link href={`/dashboard/items/${process.item.id}`}>
+                              <Button variant="outline" size="sm" className="text-xs">
+                                View Item
                               </Button>
-                            )}
-                            {process.status === "IN_PROGRESS" && (
-                              <Button size="sm" variant="outline" className="text-xs">
-                                Update Status
-                              </Button>
-                            )}
-                            <Button variant="outline" size="sm" className="text-xs">
-                              View Details
-                            </Button>
+                            </Link>
                           </div>
                         </td>
                       </tr>

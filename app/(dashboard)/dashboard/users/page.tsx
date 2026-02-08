@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { UserPlus, Users, Shield, Briefcase, User } from "lucide-react";
 import prisma from "@/lib/prisma";
+import { DeleteButton } from "@/components/DeleteButton";
 
 async function getUsers() {
   return prisma.user.findMany({
@@ -163,9 +164,7 @@ export default async function UsersPage() {
                             Edit
                           </Button>
                           {user.id !== session.user.id && (
-                            <Button variant="outline" size="sm">
-                              Delete
-                            </Button>
+                            <DeleteButton id={user.id} type="user" name={user.name} />
                           )}
                         </div>
                       </td>

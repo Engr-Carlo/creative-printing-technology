@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Users, UserCheck, Package, AlertCircle } from "lucide-react";
 import prisma from "@/lib/prisma";
+import { DeleteButton } from "@/components/DeleteButton";
+import Link from "next/link";
 
 async function getAssignments() {
   const [totalItems, assignedItems, unassignedItems, allAssignments] = await Promise.all([
@@ -189,12 +191,12 @@ export default async function AssignmentsPage() {
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm">
-                            Edit
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            Remove
-                          </Button>
+                          <Link href={`/dashboard/items/${assignment.item.id}`}>
+                            <Button variant="outline" size="sm">
+                              View Item
+                            </Button>
+                          </Link>
+                          <DeleteButton id={assignment.id} type="assignment" />
                         </div>
                       </td>
                     </tr>

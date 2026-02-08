@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Settings, User, Bell, Lock, Shield, Building2 } from "lucide-react";
+import { updateProfile, updatePassword } from "@/app/actions/users";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -86,7 +87,7 @@ export default async function SettingsPage() {
             </div>
 
             <div className="border-t pt-6">
-              <form className="space-y-4">
+              <form action={updateProfile} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
@@ -127,7 +128,7 @@ export default async function SettingsPage() {
                   <Button type="submit" size="lg">
                     Save Changes
                   </Button>
-                  <Button type="button" variant="outline" size="lg">
+                  <Button type="reset" variant="outline" size="lg">
                     Cancel
                   </Button>
                 </div>
@@ -149,29 +150,37 @@ export default async function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4 max-w-xl">
+          <form action={updatePassword} className="space-y-4 max-w-xl">
             <div className="space-y-2">
-              <Label htmlFor="current-password">Current Password</Label>
+              <Label htmlFor="currentPassword">Current Password</Label>
               <Input
-                id="current-password"
+                id="currentPassword"
+                name="currentPassword"
                 type="password"
                 placeholder="Enter current password"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
+              <Label htmlFor="newPassword">New Password</Label>
               <Input
-                id="new-password"
+                id="newPassword"
+                name="newPassword"
                 type="password"
                 placeholder="Enter new password"
+                required
+                minLength={6}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm New Password</Label>
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
               <Input
-                id="confirm-password"
+                id="confirmPassword"
+                name="confirmPassword"
                 type="password"
                 placeholder="Confirm new password"
+                required
+                minLength={6}
               />
             </div>
             <Button type="submit" size="lg">
