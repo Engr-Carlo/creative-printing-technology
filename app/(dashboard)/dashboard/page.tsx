@@ -43,7 +43,7 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Redirect based on role
+  // Redirect based on role - only from /dashboard exactly
   const userRole = session.user.role;
   
   if (userRole === "ENCODER") {
@@ -54,7 +54,7 @@ export default async function DashboardPage() {
     redirect("/dashboard/employee");
   }
 
-  // Admin continues to this page
+  // Admin and others continue to this page
   const stats = await getDashboardStats();
   const recentItems = await getRecentItems();
 

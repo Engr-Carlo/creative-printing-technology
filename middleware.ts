@@ -4,6 +4,15 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+  // Skip middleware for static files and API routes
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.includes(".") // Skip files with extensions
+  ) {
+    return NextResponse.next();
+  }
+  
   // Check for session token cookie
   const sessionToken = 
     request.cookies.get("authjs.session-token") ||
@@ -18,7 +27,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Redirect authenticated users away from login page
+  // Redirect authenticated users away from login page to main dashboard only
   if (isOnLogin && isLoggedIn) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
@@ -33,9 +42,8 @@ export const config = {
      * - api routes
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public folder)
+     * - favicon.ico, images
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.svg|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.webp).*)",
+    \"/((?!api|_next/static|_next/image|favicon.ico|.*\\\\.(?:svg|png|jpg|jpeg|gif|webp|ico)).*)\",
   ],
 };
