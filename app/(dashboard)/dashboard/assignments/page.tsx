@@ -6,9 +6,10 @@ import { Users, UserCheck, Package, AlertCircle } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { DeleteButton } from "@/components/DeleteButton";
 import Link from "next/link";
+import { CreateAssignmentDialog } from "@/components/CreateAssignmentDialog";
 
 async function getAssignments() {
-  const [totalItems, assignedItems, unassignedItems, allAssignments] = await Promise.all([
+  const [totalItems, assignedItems, unassignedItems, allAssignments, items, users] = await Promise.all([
     prisma.item.count(),
     prisma.itemAssignment.count(),
     prisma.item.count({
@@ -29,6 +30,26 @@ async function getAssignments() {
       },
       orderBy: { assignedAt: "desc" },
     }),
+    prisma.item.findMany({
+      select: {
+        id: true,
+        itemNumber: true,
+        name: true,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.user.findMany({
+      where: {
+        role: "EMPLOYEE",
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   return {
@@ -36,6 +57,8 @@ async function getAssignments() {
     assignedItems,
     unassignedItems,
     allAssignments,
+    items,
+    users,
   };
 }
 
@@ -62,10 +85,7 @@ export default async function AssignmentsPage() {
             Manage item assignments to employees
           </p>
         </div>
-        <Button size="lg" className="shadow-lg">
-          <UserCheck className="w-5 h-5 mr-2" />
-          Create Assignment
-        </Button>
+        <CreateAssignmentDialog items={data.items} users={data.users} />
       </div>
 
       {/* Stats Cards */}

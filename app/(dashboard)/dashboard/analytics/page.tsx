@@ -3,8 +3,18 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BarChart3, TrendingUp, Package, Clock, Users, CheckCircle2 } from "lucide-react";
 import prisma from "@/lib/prisma";
+import { ProductionTrendChart } from "@/components/charts/ProductionTrendChart";
+import { ItemDistributionChart } from "@/components/charts/ItemDistributionChart";
 
 async function getAnalytics() {
+  // Get last 7 days for trend chart
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    date.setHours(0, 0, 0, 0);
+    return date;
+  });
+
   const [
     totalItems,
     completedItems,
@@ -38,6 +48,48 @@ async function getAnalytics() {
     }),
   ]);
 
+  // Generate production trend data for the last 7 days
+  const productionTrendData = await Promise.all(
+    last7Days.map(async (date) => {
+      const nextDay = new Date(date);
+      nextDay.setDate(nextDay.getDate() + 1);
+
+      const [completed, inProgress, pending] = await Promise.all([
+        prisma.item.count({
+          where: {
+            updatedAt: { gte: date, lt: nextDay },
+            status: "COMPLETED",
+          },
+        }),
+        prisma.item.count({
+          where: {
+            updatedAt: { gte: date, lt: nextDay },
+            status: "IN_PROGRESS",
+          },
+        }),
+        prisma.item.count({
+          where: {
+            updatedAt: { gte: date, lt: nextDay },
+            status: "PENDING",
+          },
+        }),
+      ]);
+
+      return {
+        date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        completed,
+        inProgress,
+        pending,
+      };
+    })
+  );
+
+  // Generate department distribution data for donut chart
+  const departmentDistribution = itemsByDepartment.map((dept) => ({
+    name: dept.name,
+    value: dept._count.items,
+  }));
+
   const completionRate = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
   return {
@@ -50,6 +102,8 @@ async function getAnalytics() {
     itemsByDepartment,
     itemsByStatus,
     recentActivity,
+    productionTrendData,
+    departmentDistribution,
   };
 }
 
@@ -137,6 +191,18 @@ export default async function AnalyticsPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Production Trend Line Chart */}
+        <ProductionTrendChart data={analytics.productionTrendData} />
+
+        {/* Department Distribution Donut Chart */}
+        <ItemDistributionChart 
+          data={analytics.departmentDistribution} 
+          title="Department Distribution" 
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

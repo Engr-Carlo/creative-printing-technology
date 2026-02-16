@@ -42,13 +42,18 @@ const processStatusConfig = {
   DELAYED: { label: "Delayed", color: "bg-red-100 text-red-800 border-red-300", icon: XCircle },
 };
 
-export default async function ItemDetailPage({ params }: { params: { id: string } }) {
+export default async function ItemDetailPage({ 
+  params 
+}: { 
+  params: Promise<{ id: string }> 
+}) {
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
   }
 
-  const item = await getItem(params.id);
+  const { id } = await params;
+  const item = await getItem(id);
   
   if (!item) {
     notFound();

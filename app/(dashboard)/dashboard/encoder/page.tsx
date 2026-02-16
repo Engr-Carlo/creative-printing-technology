@@ -79,16 +79,17 @@ async function getAllDepartmentItems() {
 export default async function EncoderDashboardPage({
   searchParams,
 }: {
-  searchParams: { category?: string };
+  searchParams: Promise<{ category?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
   }
 
+  const { category } = await searchParams;
   const stats = await getEncoderStats();
   const allItems = await getAllDepartmentItems();
-  const activeCategory = searchParams.category || "MANUAL";
+  const activeCategory = category || "CARDBOARD";
   const activeItems = allItems[activeCategory] || [];
   const activeCategoryConfig = DEPARTMENT_CATEGORIES.find((c) => c.type === activeCategory);
 

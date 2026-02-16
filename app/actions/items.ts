@@ -61,7 +61,7 @@ export async function createItem(prevState: any, formData: FormData) {
 
     revalidatePath("/dashboard/items");
     revalidatePath("/dashboard/encoder");
-    redirect(`/dashboard/items/${item.id}`);
+    return { success: true, itemId: item.id };
   } catch (error) {
     console.error("Error creating item:", error);
     return { error: "Failed to create item" };

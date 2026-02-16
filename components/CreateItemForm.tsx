@@ -36,6 +36,10 @@ export function CreateItemForm({ departments }: { departments: Department[] }) {
     if (state.error) {
       alert(state.error);
     }
+    if (state.success && state.itemId) {
+      alert("Item created successfully!");
+      window.location.href = `/dashboard/items/${state.itemId}`;
+    }
   }, [state]);
 
   return (
