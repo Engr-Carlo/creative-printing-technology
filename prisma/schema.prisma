@@ -26,6 +26,19 @@ enum DepartmentType {
   OTHER_ITEMS
 }
 
+enum ItemType {
+  FOLDED
+  SHEETED
+  STITCHING
+}
+
+enum RawMaterialStatus {
+  AVAILABLE
+  DONE
+  PROCESSING
+  SHORT
+}
+
 enum ItemStatus {
   PENDING
   IN_PROGRESS
@@ -91,17 +104,18 @@ model Department {
 }
 
 model Item {
-  id            String     @id @default(cuid())
+  id            String            @id @default(cuid())
   name          String
-  itemNumber    String     @unique
-  type          String
+  itemNumber    String            @unique
+  type          ItemType
   quantity      Int
   color         String?
   customer      String
   targetOutput  Int
-  currentOutput Int        @default(0)
+  currentOutput Int               @default(0)
   deadline      DateTime
-  status        ItemStatus @default(PENDING)
+  status        ItemStatus        @default(PENDING)
+  rawMaterials  RawMaterialStatus @default(SHORT)
   
   departmentId String
   department   Department @relation(fields: [departmentId], references: [id])

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Package, Clock, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
+import { RawMaterialsSelect } from "@/components/RawMaterialsSelect";
 
 async function getItems() {
   return prisma.item.findMany({
@@ -131,6 +132,7 @@ export default async function ItemsPage() {
                   <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Department</th>
                   <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Quantity</th>
                   <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Progress</th>
+                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Raw Materials</th>
                   <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Status</th>
                   <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Processes</th>
                   <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Actions</th>
@@ -139,7 +141,7 @@ export default async function ItemsPage() {
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-center py-12 text-muted-foreground">
+                    <td colSpan={10} className="text-center py-12 text-muted-foreground">
                       <Package className="w-12 h-12 mx-auto mb-3 text-gray-400" />
                       <p className="font-medium">No items found</p>
                       <p className="text-sm mt-1">Create your first item to get started</p>
@@ -183,6 +185,12 @@ export default async function ItemsPage() {
                               {progress}%
                             </span>
                           </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <RawMaterialsSelect
+                            itemId={item.id}
+                            currentStatus={(item as any).rawMaterials || "SHORT"}
+                          />
                         </td>
                         <td className="py-3 px-4">
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${config?.color}`}>

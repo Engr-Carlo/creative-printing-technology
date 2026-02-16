@@ -2,9 +2,10 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Package, Clock, CheckCircle2, XCircle, AlertCircle, Calendar, User, Building2 } from "lucide-react";
+import { ArrowLeft, Package, Clock, CheckCircle2, XCircle, AlertCircle, Calendar, User, Building2, BoxIcon } from "lucide-react";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
+import { RawMaterialsSelect, RawMaterialsBadge } from "@/components/RawMaterialsSelect";
 
 async function getItem(id: string) {
   return prisma.item.findUnique({
@@ -175,6 +176,16 @@ export default async function ItemDetailPage({ params }: { params: { id: string 
                   <p className="font-semibold">{item.color}</p>
                 </div>
               )}
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Raw Materials</p>
+                <div className="mt-1">
+                  {session.user.role === "ADMIN" || session.user.role === "ENCODER" ? (
+                    <RawMaterialsSelect itemId={item.id} currentStatus={(item as any).rawMaterials || "SHORT"} />
+                  ) : (
+                    <RawMaterialsBadge status={(item as any).rawMaterials || "SHORT"} />
+                  )}
+                </div>
+              </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Created</p>
                 <p className="font-semibold">{new Date(item.createdAt).toLocaleDateString()}</p>

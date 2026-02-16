@@ -2,68 +2,95 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, Clock, CheckCircle2, AlertTriangle, PlusCircle, Users } from "lucide-react";
+import {
+  Package,
+  Clock,
+  CheckCircle2,
+  PlusCircle,
+  Users,
+  Calendar,
+} from "lucide-react";
 import prisma from "@/lib/prisma";
+import Link from "next/link";
+import { RawMaterialsSelect } from "@/components/RawMaterialsSelect";
+
+// Department category config matching the sidebar from the screenshot
+const DEPARTMENT_CATEGORIES = [
+  { type: "CARDBOARD", label: "Card Board", color: "bg-orange-500" },
+  { type: "MANUAL", label: "Manuals", color: "bg-orange-500" },
+  { type: "LABEL", label: "Labels / Sticker", color: "bg-orange-500" },
+  { type: "BOOKBIND", label: "Bookbind", color: "bg-orange-500" },
+  { type: "OTHER_ITEMS", label: "Other Items", color: "bg-orange-500" },
+];
+
+const TYPE_LABELS: Record<string, string> = {
+  FOLDED: "Folded",
+  SHEETED: "Sheeted",
+  STITCHING: "Stitching",
+};
+
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-800 border-yellow-300" },
+  IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-800 border-blue-300" },
+  COMPLETED: { label: "Completed", color: "bg-green-100 text-green-800 border-green-300" },
+  DELAYED: { label: "Delayed", color: "bg-red-100 text-red-800 border-red-300" },
+};
 
 async function getEncoderStats() {
-  const [totalItems, pendingItems, inProgressItems, departments] = await Promise.all([
-    prisma.item.count(),
-    prisma.item.count({ where: { status: "PENDING" } }),
-    prisma.item.count({ where: { status: "IN_PROGRESS" } }),
-    prisma.department.count(),
-  ]);
+  const [totalItems, pendingItems, inProgressItems, completedItems, departments] =
+    await Promise.all([
+      prisma.item.count(),
+      prisma.item.count({ where: { status: "PENDING" } }),
+      prisma.item.count({ where: { status: "IN_PROGRESS" } }),
+      prisma.item.count({ where: { status: "COMPLETED" } }),
+      prisma.department.count(),
+    ]);
 
-  return {
-    totalItems,
-    pendingItems,
-    inProgressItems,
-    departments,
-  };
+  return { totalItems, pendingItems, inProgressItems, completedItems, departments };
 }
 
-async function getRecentItems() {
+async function getItemsByDepartment(departmentType: string) {
   return prisma.item.findMany({
-    take: 8,
-    orderBy: { createdAt: "desc" },
+    where: {
+      department: {
+        type: departmentType as any,
+      },
+    },
     include: {
       department: true,
       assignments: {
         include: {
-          user: {
-            select: {
-              name: true,
-            },
-          },
+          user: { select: { name: true } },
         },
       },
     },
-  });
-}
-
-async function getUnassignedItems() {
-  return prisma.item.findMany({
-    where: {
-      assignments: {
-        none: {},
-      },
-    },
-    include: {
-      department: true,
-    },
     orderBy: { createdAt: "desc" },
-    take: 5,
   });
 }
 
-export default async function EncoderDashboardPage() {
+async function getAllDepartmentItems() {
+  const results: Record<string, any[]> = {};
+  for (const cat of DEPARTMENT_CATEGORIES) {
+    results[cat.type] = await getItemsByDepartment(cat.type);
+  }
+  return results;
+}
+
+export default async function EncoderDashboardPage({
+  searchParams,
+}: {
+  searchParams: { category?: string };
+}) {
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
   }
 
   const stats = await getEncoderStats();
-  const recentItems = await getRecentItems();
-  const unassignedItems = await getUnassignedItems();
+  const allItems = await getAllDepartmentItems();
+  const activeCategory = searchParams.category || "MANUAL";
+  const activeItems = allItems[activeCategory] || [];
+  const activeCategoryConfig = DEPARTMENT_CATEGORIES.find((c) => c.type === activeCategory);
 
   const statCards = [
     {
@@ -94,33 +121,40 @@ export default async function EncoderDashboardPage() {
       shadow: "shadow-primary/20",
     },
     {
-      title: "Departments",
-      value: stats.departments,
-      icon: Users,
-      color: "text-purple-600",
-      bgColor: "bg-gradient-to-br from-purple-500/10 to-purple-600/5",
-      iconBg: "bg-purple-500",
-      shadow: "shadow-purple-500/20",
+      title: "Completed",
+      value: stats.completedItems,
+      icon: CheckCircle2,
+      color: "text-green-600",
+      bgColor: "bg-gradient-to-br from-green-500/10 to-green-600/5",
+      iconBg: "bg-green-500",
+      shadow: "shadow-green-500/20",
     },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Encoder Dashboard</h2>
-          <p className="text-muted-foreground">
-            Manage items, assignments, and production workflow
-          </p>
+      {/* Header - matches the orange bar from the screenshot */}
+      <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="text-white">
+            <p className="text-sm font-medium opacity-90">Welcome back,</p>
+            <h2 className="text-2xl font-bold">{session.user.name}</h2>
+            <p className="text-sm opacity-80 mt-1">Encoder — Production Monitoring System</p>
+          </div>
+          <Link href="/dashboard/items/new">
+            <Button
+              size="lg"
+              className="gap-2 bg-white text-orange-600 hover:bg-orange-50 font-bold shadow-lg"
+            >
+              <PlusCircle className="w-5 h-5" />
+              Create New Item
+            </Button>
+          </Link>
         </div>
-        <Button size="lg" className="gap-2">
-          <PlusCircle className="w-5 h-5" />
-          Create New Item
-        </Button>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
           <Card
             key={stat.title}
@@ -143,142 +177,236 @@ export default async function EncoderDashboardPage() {
         ))}
       </div>
 
-      {/* Unassigned Items Alert */}
-      {unassignedItems.length > 0 && (
-        <Card className="shadow-lg border-2 border-orange-200 bg-gradient-to-r from-orange-50 to-yellow-50">
-          <CardHeader className="border-b bg-orange-100/50">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl font-bold flex items-center gap-2 text-orange-800">
-                <AlertTriangle className="w-5 h-5" />
-                Items Needing Assignment ({unassignedItems.length})
-              </CardTitle>
-              <Button variant="outline" size="sm">
-                Assign All
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="space-y-3">
-              {unassignedItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-white hover:shadow-md transition-all"
-                >
-                  <div className="space-y-1">
-                    <p className="font-semibold text-base">{item.name}</p>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs font-medium">
-                        {item.itemNumber}
-                      </span>
-                      <span>•</span>
-                      <span className="font-medium">{item.department.name}</span>
-                    </div>
-                  </div>
-                  <Button size="sm" variant="outline">
-                    <Users className="w-4 h-4 mr-2" />
-                    Assign
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Recent Items */}
-      <Card className="shadow-lg">
-        <CardHeader className="border-b bg-gradient-to-r from-muted/30 to-muted/10">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold">All Items</CardTitle>
-            <Button variant="outline" size="sm">
-              View All
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            {recentItems.length === 0 ? (
-              <div className="text-center py-12">
-                <Package className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-                <p className="text-sm text-muted-foreground font-medium">
-                  No items yet. Create your first item to get started.
-                </p>
+      {/* Main Content: Department Sidebar + Database Table */}
+      <div className="flex gap-6">
+        {/* Left Sidebar - Department Categories */}
+        <div className="w-56 flex-shrink-0 space-y-4">
+          <Card className="border-2 overflow-hidden">
+            <CardHeader className="bg-orange-500 py-3 px-4">
+              <div className="flex items-center gap-2 text-white">
+                <Package className="w-5 h-5" />
+                <CardTitle className="text-sm font-bold">ITEMS</CardTitle>
               </div>
-            ) : (
-              recentItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-gradient-to-r from-background to-muted/20 hover:shadow-md transition-all hover:border-primary/50"
-                >
-                  <div className="space-y-1 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-base">{item.name}</p>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs font-medium">
-                        {item.itemNumber}
-                      </span>
-                      <span>•</span>
-                      <span className="font-medium">{item.department.name}</span>
-                      {item.assignments.length > 0 && (
-                        <>
-                          <span>•</span>
-                          <span className="text-xs">
-                            {item.assignments.length} assigned
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right space-y-2">
+            </CardHeader>
+            <CardContent className="p-2 space-y-1">
+              {DEPARTMENT_CATEGORIES.map((cat) => {
+                const isActive = activeCategory === cat.type;
+                const itemCount = allItems[cat.type]?.length || 0;
+                return (
+                  <Link
+                    key={cat.type}
+                    href={`/dashboard/encoder?category=${cat.type}`}
+                  >
                     <div
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold shadow-sm ${
-                        item.status === "COMPLETED"
-                          ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
-                          : item.status === "IN_PROGRESS"
-                          ? "bg-gradient-to-r from-orange-500 to-primary text-white"
-                          : item.status === "PENDING"
-                          ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900"
-                          : item.status === "DELAYED"
-                          ? "bg-gradient-to-r from-red-500 to-red-600 text-white"
-                          : "bg-gray-100 text-gray-800"
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                        isActive
+                          ? "bg-orange-500 text-white shadow-md"
+                          : "text-gray-700 hover:bg-orange-50 hover:text-orange-600"
                       }`}
                     >
-                      {item.status.replace("_", " ")}
+                      <span>{cat.label}</span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                          isActive
+                            ? "bg-white/20 text-white"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {itemCount}
+                      </span>
                     </div>
-                    <p className="text-sm text-muted-foreground font-medium">
-                      Target: <span className="font-bold text-foreground">{item.targetOutput}</span>
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                  </Link>
+                );
+              })}
+            </CardContent>
+          </Card>
 
-      {/* Quick Actions */}
-      <Card className="shadow-lg border-2 border-dashed border-primary/20 bg-gradient-to-br from-primary/5 to-orange-500/5">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 md:grid-cols-3">
-            <button className="flex items-center justify-center gap-3 p-5 border-2 border-border rounded-xl hover:bg-primary hover:text-white hover:border-primary transition-all duration-200 hover:shadow-lg group">
-              <PlusCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
-              <span className="font-semibold">New Item</span>
-            </button>
-            <button className="flex items-center justify-center gap-3 p-5 border-2 border-border rounded-xl hover:bg-primary hover:text-white hover:border-primary transition-all duration-200 hover:shadow-lg group">
-              <Users className="w-6 h-6 group-hover:scale-110 transition-transform" />
-              <span className="font-semibold">Manage Assignments</span>
-            </button>
-            <button className="flex items-center justify-center gap-3 p-5 border-2 border-border rounded-xl hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 hover:shadow-lg group">
-              <Package className="w-6 h-6 group-hover:scale-110 transition-transform" />
-              <span className="font-semibold">View All Items</span>
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+          {/* Quick Actions */}
+          <Card className="border-2">
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-sm font-bold text-gray-700">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="p-2 space-y-1">
+              <Link href="/dashboard/items/new">
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-all">
+                  <PlusCircle className="w-4 h-4" />
+                  New Item
+                </div>
+              </Link>
+              <Link href="/dashboard/assignments">
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-all">
+                  <Users className="w-4 h-4" />
+                  Assignments
+                </div>
+              </Link>
+              <Link href="/dashboard/items">
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-all">
+                  <Package className="w-4 h-4" />
+                  All Items
+                </div>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Content - Database Table */}
+        <div className="flex-1 min-w-0">
+          <Card className="border-2 overflow-hidden">
+            {/* Category Header */}
+            <CardHeader className="bg-gradient-to-r from-orange-500 to-orange-600 py-3 px-6">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-bold text-white">
+                  {activeCategoryConfig?.label || "Items"}
+                </CardTitle>
+                <span className="text-sm text-white/80 font-medium">
+                  {activeItems.length} item{activeItems.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+            </CardHeader>
+
+            {/* Database Table Header */}
+            <div className="bg-orange-100 border-b-2 border-orange-200">
+              <div className="px-4 py-1 text-center">
+                <span className="text-sm font-bold text-orange-800 tracking-wider">
+                  DATABASE
+                </span>
+              </div>
+            </div>
+
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-orange-50 border-b-2 border-orange-200">
+                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                        Item Number
+                      </th>
+                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                        Name
+                      </th>
+                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                        Type
+                      </th>
+                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                        Quantity
+                      </th>
+                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                        Color
+                      </th>
+                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                        Customer
+                      </th>
+                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                        Target Output
+                      </th>
+                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                        Deadline
+                      </th>
+                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                        Raw Materials
+                      </th>
+                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                        Status
+                      </th>
+                      <th className="text-center py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeItems.length === 0 ? (
+                      <tr>
+                        <td colSpan={11} className="text-center py-16 text-muted-foreground">
+                          <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                          <p className="font-semibold text-gray-500">
+                            No items in {activeCategoryConfig?.label}
+                          </p>
+                          <p className="text-sm mt-1 text-gray-400">
+                            Create a new item to get started
+                          </p>
+                          <Link href="/dashboard/items/new" className="mt-4 inline-block">
+                            <Button size="sm" className="mt-4">
+                              <PlusCircle className="w-4 h-4 mr-2" />
+                              Create Item
+                            </Button>
+                          </Link>
+                        </td>
+                      </tr>
+                    ) : (
+                      activeItems.map((item: any, index: number) => {
+                        const statusConfig =
+                          STATUS_CONFIG[item.status] || STATUS_CONFIG.PENDING;
+                        return (
+                          <tr
+                            key={item.id}
+                            className={`border-b hover:bg-orange-50/50 transition-colors ${
+                              index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                            }`}
+                          >
+                            <td className="py-2.5 px-3">
+                              <span className="font-mono text-xs font-bold text-blue-600">
+                                {item.itemNumber}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 font-medium text-gray-900">
+                              {item.name}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700 border">
+                                {TYPE_LABELS[item.type] || item.type}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 font-semibold text-gray-700">
+                              {item.quantity.toLocaleString()}
+                            </td>
+                            <td className="py-2.5 px-3 text-gray-600">
+                              {item.color || "—"}
+                            </td>
+                            <td className="py-2.5 px-3 text-gray-700 font-medium">
+                              {item.customer}
+                            </td>
+                            <td className="py-2.5 px-3 font-semibold text-gray-700">
+                              {item.targetOutput.toLocaleString()}
+                            </td>
+                            <td className="py-2.5 px-3 text-gray-600 whitespace-nowrap">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3 text-gray-400" />
+                                <span className="text-xs">
+                                  {new Date(item.deadline).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <RawMaterialsSelect
+                                itemId={item.id}
+                                currentStatus={item.rawMaterials}
+                              />
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span
+                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold border ${statusConfig.color}`}
+                              >
+                                {statusConfig.label}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <Link href={`/dashboard/items/${item.id}`}>
+                                <Button variant="outline" size="sm" className="text-xs h-7">
+                                  View
+                                </Button>
+                              </Link>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

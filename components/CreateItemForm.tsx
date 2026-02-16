@@ -16,6 +16,19 @@ type Department = {
   name: string;
 };
 
+const ITEM_TYPES = [
+  { value: "FOLDED", label: "Folded" },
+  { value: "SHEETED", label: "Sheeted" },
+  { value: "STITCHING", label: "Stitching" },
+];
+
+const RAW_MATERIAL_STATUSES = [
+  { value: "AVAILABLE", label: "Available" },
+  { value: "DONE", label: "Done" },
+  { value: "PROCESSING", label: "Processing" },
+  { value: "SHORT", label: "Short" },
+];
+
 export function CreateItemForm({ departments }: { departments: Department[] }) {
   const [state, formAction] = useFormState(createItem, initialState);
 
@@ -35,7 +48,7 @@ export function CreateItemForm({ departments }: { departments: Department[] }) {
           <Input
             id="itemNumber"
             name="itemNumber"
-            placeholder="ITM-001"
+            placeholder="e.g. #ITEM1001"
             required
           />
         </div>
@@ -47,7 +60,7 @@ export function CreateItemForm({ departments }: { departments: Department[] }) {
           <Input
             id="name"
             name="name"
-            placeholder="Business Cards"
+            placeholder="e.g. Premium Box Package"
             required
           />
         </div>
@@ -56,12 +69,19 @@ export function CreateItemForm({ departments }: { departments: Department[] }) {
           <Label htmlFor="type">
             Type <span className="text-red-500">*</span>
           </Label>
-          <Input
+          <select
             id="type"
             name="type"
-            placeholder="Printing, Packaging, etc."
             required
-          />
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="">Select Type</option>
+            {ITEM_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-2">
@@ -97,7 +117,7 @@ export function CreateItemForm({ departments }: { departments: Department[] }) {
 
         <div className="space-y-2">
           <Label htmlFor="color">Color</Label>
-          <Input id="color" name="color" placeholder="CMYK, RGB, etc." />
+          <Input id="color" name="color" placeholder="e.g. Single Color Black, 2 Colors" />
         </div>
 
         <div className="space-y-2">
@@ -128,7 +148,7 @@ export function CreateItemForm({ departments }: { departments: Department[] }) {
           />
         </div>
 
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-2">
           <Label htmlFor="deadline">
             Deadline <span className="text-red-500">*</span>
           </Label>
@@ -139,10 +159,31 @@ export function CreateItemForm({ departments }: { departments: Department[] }) {
             required
           />
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="rawMaterials">
+            Raw Materials Status <span className="text-red-500">*</span>
+          </Label>
+          <select
+            id="rawMaterials"
+            name="rawMaterials"
+            required
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="">Select Status</option>
+            {RAW_MATERIAL_STATUSES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="flex gap-4 justify-end">
-        <Button type="submit">Create Item</Button>
+        <Button type="submit" size="lg">
+          Create Item
+        </Button>
       </div>
     </form>
   );

@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, DepartmentType, ItemStatus, ProcessStatus } from '@prisma/client';
+import { PrismaClient, UserRole, DepartmentType, ItemStatus, ProcessStatus, ItemType, RawMaterialStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -155,7 +155,7 @@ async function main() {
     create: {
       itemNumber: '#ITEM1001',
       name: 'Premium Box Package',
-      type: 'FOLDED',
+      type: ItemType.FOLDED,
       quantity: 10000,
       color: 'White',
       customer: 'ABC Corporation',
@@ -163,6 +163,7 @@ async function main() {
       currentOutput: 243,
       deadline: new Date('2026-01-15'),
       status: ItemStatus.IN_PROGRESS,
+      rawMaterials: RawMaterialStatus.AVAILABLE,
       departmentId: cardboard.id,
     },
   });
@@ -173,7 +174,7 @@ async function main() {
     create: {
       itemNumber: '#ITEM2001',
       name: 'Product Labels',
-      type: 'SHEETED',
+      type: ItemType.SHEETED,
       quantity: 5000,
       color: 'Multi-color',
       customer: 'XYZ Inc',
@@ -181,6 +182,7 @@ async function main() {
       currentOutput: 1200,
       deadline: new Date('2026-02-10'),
       status: ItemStatus.IN_PROGRESS,
+      rawMaterials: RawMaterialStatus.PROCESSING,
       departmentId: label.id,
     },
   });
@@ -191,7 +193,7 @@ async function main() {
     create: {
       itemNumber: '#ITEM3001',
       name: 'Manual Booklet',
-      type: 'STITCHED',
+      type: ItemType.STITCHING,
       quantity: 2000,
       color: 'Black & White',
       customer: 'Tech Solutions',
@@ -199,6 +201,7 @@ async function main() {
       currentOutput: 0,
       deadline: new Date('2026-02-20'),
       status: ItemStatus.PENDING,
+      rawMaterials: RawMaterialStatus.SHORT,
       departmentId: manual.id,
     },
   });
