@@ -13,6 +13,8 @@ import {
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { RawMaterialsSelect } from "@/components/RawMaterialsSelect";
+import { ProductionTrendChart } from "@/components/charts/ProductionTrendChart";
+import { ItemDistributionChart } from "@/components/charts/ItemDistributionChart";
 
 // Department category config matching the sidebar from the screenshot
 const DEPARTMENT_CATEGORIES = [
@@ -37,16 +39,15 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 async function getEncoderStats() {
-  const [totalItems, pendingItems, inProgressItems, completedItems, departments] =
+  const [totalItems, pendingItems, inProgressItems, completedItems] =
     await Promise.all([
       prisma.item.count(),
       prisma.item.count({ where: { status: "PENDING" } }),
       prisma.item.count({ where: { status: "IN_PROGRESS" } }),
       prisma.item.count({ where: { status: "COMPLETED" } }),
-      prisma.department.count(),
     ]);
 
-  return { totalItems, pendingItems, inProgressItems, completedItems, departments };
+  return { totalItems, pendingItems, inProgressItems, completedItems };
 }
 
 async function getItemsByDepartment(departmentType: string) {
@@ -56,24 +57,63 @@ async function getItemsByDepartment(departmentType: string) {
         type: departmentType as any,
       },
     },
-    include: {
-      department: true,
+    select: {
+      id: true,
+      itemNumber: true,
+      name: true,
+      type: true,
+      quantity: true,
+      customer: true,
+      deadline: true,
+      status: true,
+      rawMaterials: true,
+      createdAt: true,
+      department: {
+        select: { name: true },
+      },
       assignments: {
-        include: {
+        select: {
           user: { select: { name: true } },
         },
       },
     },
     orderBy: { createdAt: "desc" },
+    take: 100, // Limit to 100 items for performance
   });
 }
 
-async function getAllDepartmentItems() {
-  const results: Record<string, any[]> = {};
-  for (const cat of DEPARTMENT_CATEGORIES) {
-    results[cat.type] = await getItemsByDepartment(cat.type);
-  }
-  return results;
+async function getChartData() {
+  const [itemsByStatus, itemsByDepartment] = await Promise.all([
+    prisma.item.groupBy({
+      by: ["status"],
+      _count: true,
+    }),
+    prisma.department.findMany({
+      select: {
+        name: true,
+        _count: {
+          select: { items: true },
+        },
+      },
+    }),
+  ]);
+
+  const statusData = [
+    { date: "Today", completed: 0, inProgress: 0, pending: 0 },
+  ];
+  
+  itemsByStatus.forEach((s) => {
+    if (s.status === "COMPLETED") statusData[0].completed = s._count;
+    if (s.status === "IN_PROGRESS") statusData[0].inProgress = s._count;
+    if (s.status === "PENDING") statusData[0].pending = s._count;
+  });
+
+  const deptData = itemsByDepartment.map((d) => ({
+    name: d.name,
+    value: d._count.items,
+  }));
+
+  return { statusData, deptData };
 }
 
 export default async function EncoderDashboardPage({
@@ -87,10 +127,14 @@ export default async function EncoderDashboardPage({
   }
 
   const { category } = await searchParams;
-  const stats = await getEncoderStats();
-  const allItems = await getAllDepartmentItems();
   const activeCategory = category || "CARDBOARD";
-  const activeItems = allItems[activeCategory] || [];
+  
+  const [stats, activeItems, chartData] = await Promise.all([
+    getEncoderStats(),
+    getItemsByDepartment(activeCategory),
+    getChartData(),
+  ]);
+  
   const activeCategoryConfig = DEPARTMENT_CATEGORIES.find((c) => c.type === activeCategory);
 
   const statCards = [
@@ -133,88 +177,85 @@ export default async function EncoderDashboardPage({
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header - matches the orange bar from the screenshot */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 shadow-lg">
+    <div className="space-y-3">
+      {/* Header - Compact */}
+      <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 shadow-md">
         <div className="flex items-center justify-between">
           <div className="text-white">
-            <p className="text-sm font-medium opacity-90">Welcome back,</p>
-            <h2 className="text-2xl font-bold">{session.user.name}</h2>
-            <p className="text-sm opacity-80 mt-1">Encoder — Production Monitoring System</p>
+            <h2 className="text-xl font-bold">{session.user.name}</h2>
+            <p className="text-xs opacity-80">Encoder — Production Monitoring</p>
           </div>
           <Link href="/dashboard/items/new">
             <Button
-              size="lg"
-              className="gap-2 bg-white text-orange-600 hover:bg-orange-50 font-bold shadow-lg"
+              size="sm"
+              className="gap-1 bg-white text-orange-600 hover:bg-orange-50 font-semibold text-xs"
             >
-              <PlusCircle className="w-5 h-5" />
-              Create New Item
+              <PlusCircle className="w-4 h-4" />
+              Create Item
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Stats Grid - Compact */}
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
           <Card
             key={stat.title}
-            className={`${stat.bgColor} border-0 shadow-lg ${stat.shadow} hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1`}
+            className={`${stat.bgColor} border-0 shadow-sm hover:shadow-md transition-all`}
           >
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-semibold text-foreground/80">
-                {stat.title}
-              </CardTitle>
-              <div
-                className={`w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center shadow-lg`}
-              >
-                <stat.icon className="w-5 h-5 text-white" />
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-foreground/60">
+                    {stat.title}
+                  </p>
+                  <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                </div>
+                <div
+                  className={`w-8 h-8 rounded-lg ${stat.iconBg} flex items-center justify-center`}
+                >
+                  <stat.icon className="w-4 h-4 text-white" />
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
             </CardContent>
           </Card>
         ))}
       </div>
 
+      {/* Charts - Compact Side by Side */}
+      <div className="grid gap-3 md:grid-cols-2 h-[180px]">
+        <ProductionTrendChart data={chartData.statusData} />
+        <ItemDistributionChart data={chartData.deptData} title="Items by Department" />
+      </div>
+
       {/* Main Content: Department Sidebar + Database Table */}
-      <div className="flex gap-6">
-        {/* Left Sidebar - Department Categories */}
-        <div className="w-56 flex-shrink-0 space-y-4">
+      <div className="flex gap-4">
+        {/* Left Sidebar - Compact Department Categories */}
+        <div className="w-48 flex-shrink-0 space-y-3">
           <Card className="border-2 overflow-hidden">
-            <CardHeader className="bg-orange-500 py-3 px-4">
+            <CardHeader className="bg-orange-500 py-2 px-3">
               <div className="flex items-center gap-2 text-white">
-                <Package className="w-5 h-5" />
-                <CardTitle className="text-sm font-bold">ITEMS</CardTitle>
+                <Package className="w-4 h-4" />
+                <CardTitle className="text-xs font-bold">DEPARTMENTS</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="p-2 space-y-1">
+            <CardContent className="p-1.5 space-y-0.5">
               {DEPARTMENT_CATEGORIES.map((cat) => {
                 const isActive = activeCategory === cat.type;
-                const itemCount = allItems[cat.type]?.length || 0;
                 return (
                   <Link
                     key={cat.type}
                     href={`/dashboard/encoder?category=${cat.type}`}
                   >
                     <div
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                      className={`flex items-center justify-between px-2.5 py-1.5 rounded text-xs font-semibold transition-all ${
                         isActive
-                          ? "bg-orange-500 text-white shadow-md"
+                          ? "bg-orange-500 text-white"
                           : "text-gray-700 hover:bg-orange-50 hover:text-orange-600"
                       }`}
                     >
                       <span>{cat.label}</span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                          isActive
-                            ? "bg-white/20 text-white"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {itemCount}
-                      </span>
                     </div>
                   </Link>
                 );
@@ -222,27 +263,27 @@ export default async function EncoderDashboardPage({
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
+          {/* Quick Actions - Compact */}
           <Card className="border-2">
-            <CardHeader className="py-3 px-4">
-              <CardTitle className="text-sm font-bold text-gray-700">Quick Actions</CardTitle>
+            <CardHeader className="py-2 px-3">
+              <CardTitle className="text-xs font-bold text-gray-700">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="p-2 space-y-1">
+            <CardContent className="p-1.5 space-y-0.5">
               <Link href="/dashboard/items/new">
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-all">
-                  <PlusCircle className="w-4 h-4" />
+                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded text-xs font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-all">
+                  <PlusCircle className="w-3 h-3" />
                   New Item
                 </div>
               </Link>
               <Link href="/dashboard/assignments">
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-all">
-                  <Users className="w-4 h-4" />
+                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded text-xs font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-all">
+                  <Users className="w-3 h-3" />
                   Assignments
                 </div>
               </Link>
               <Link href="/dashboard/items">
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-all">
-                  <Package className="w-4 h-4" />
+                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded text-xs font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-all">
+                  <Package className="w-3 h-3" />
                   All Items
                 </div>
               </Link>
@@ -253,63 +294,48 @@ export default async function EncoderDashboardPage({
         {/* Right Content - Database Table */}
         <div className="flex-1 min-w-0">
           <Card className="border-2 overflow-hidden">
-            {/* Category Header */}
-            <CardHeader className="bg-gradient-to-r from-orange-500 to-orange-600 py-3 px-6">
+            {/* Category Header - Compact */}
+            <CardHeader className="bg-gradient-to-r from-orange-500 to-orange-600 py-2 px-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold text-white">
+                <CardTitle className="text-sm font-bold text-white">
                   {activeCategoryConfig?.label || "Items"}
                 </CardTitle>
-                <span className="text-sm text-white/80 font-medium">
+                <span className="text-xs text-white/80 font-medium">
                   {activeItems.length} item{activeItems.length !== 1 ? "s" : ""}
                 </span>
               </div>
             </CardHeader>
 
-            {/* Database Table Header */}
-            <div className="bg-orange-100 border-b-2 border-orange-200">
-              <div className="px-4 py-1 text-center">
-                <span className="text-sm font-bold text-orange-800 tracking-wider">
-                  DATABASE
-                </span>
-              </div>
-            </div>
-
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-orange-50 border-b-2 border-orange-200">
-                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
-                        Item Number
+              <div className="overflow-x-auto max-h-[calc(100vh-480px)]">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-orange-50 border-b border-orange-200">
+                    <tr>
+                      <th className="text-left py-1.5 px-2 font-semibold text-orange-900 whitespace-nowrap">
+                        Item #
                       </th>
-                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                      <th className="text-left py-1.5 px-2 font-semibold text-orange-900 whitespace-nowrap">
                         Name
                       </th>
-                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                      <th className="text-left py-1.5 px-2 font-semibold text-orange-900 whitespace-nowrap">
                         Type
                       </th>
-                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
-                        Quantity
+                      <th className="text-left py-1.5 px-2 font-semibold text-orange-900 whitespace-nowrap">
+                        Qty
                       </th>
-                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
-                        Color
-                      </th>
-                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                      <th className="text-left py-1.5 px-2 font-semibold text-orange-900 whitespace-nowrap">
                         Customer
                       </th>
-                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
-                        Target Output
-                      </th>
-                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                      <th className="text-left py-1.5 px-2 font-semibold text-orange-900 whitespace-nowrap">
                         Deadline
                       </th>
-                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                      <th className="text-left py-1.5 px-2 font-semibold text-orange-900 whitespace-nowrap">
                         Raw Materials
                       </th>
-                      <th className="text-left py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                      <th className="text-left py-1.5 px-2 font-semibold text-orange-900 whitespace-nowrap">
                         Status
                       </th>
-                      <th className="text-center py-2.5 px-3 font-bold text-xs text-orange-900 uppercase tracking-wider whitespace-nowrap">
+                      <th className="text-center py-1.5 px-2 font-semibold text-orange-900 whitespace-nowrap">
                         Actions
                       </th>
                     </tr>
@@ -317,17 +343,14 @@ export default async function EncoderDashboardPage({
                   <tbody>
                     {activeItems.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="text-center py-16 text-muted-foreground">
-                          <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                          <p className="font-semibold text-gray-500">
+                        <td colSpan={9} className="text-center py-8 text-muted-foreground">
+                          <Package className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                          <p className="text-xs font-semibold text-gray-500">
                             No items in {activeCategoryConfig?.label}
                           </p>
-                          <p className="text-sm mt-1 text-gray-400">
-                            Create a new item to get started
-                          </p>
-                          <Link href="/dashboard/items/new" className="mt-4 inline-block">
-                            <Button size="sm" className="mt-4">
-                              <PlusCircle className="w-4 h-4 mr-2" />
+                          <Link href="/dashboard/items/new" className="mt-2 inline-block">
+                            <Button size="sm" className="mt-2 text-xs">
+                              <PlusCircle className="w-3 h-3 mr-1" />
                               Create Item
                             </Button>
                           </Link>
@@ -344,55 +367,46 @@ export default async function EncoderDashboardPage({
                               index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
                             }`}
                           >
-                            <td className="py-2.5 px-3">
-                              <span className="font-mono text-xs font-bold text-blue-600">
+                            <td className="py-1.5 px-2">
+                              <span className="font-mono text-[11px] font-semibold text-blue-600">
                                 {item.itemNumber}
                               </span>
                             </td>
-                            <td className="py-2.5 px-3 font-medium text-gray-900">
+                            <td className="py-1.5 px-2 font-medium text-gray-900 max-w-[150px] truncate">
                               {item.name}
                             </td>
-                            <td className="py-2.5 px-3">
-                              <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700 border">
+                            <td className="py-1.5 px-2">
+                              <span className="inline-flex items-center rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] font-semibold text-gray-700 border">
                                 {TYPE_LABELS[item.type] || item.type}
                               </span>
                             </td>
-                            <td className="py-2.5 px-3 font-semibold text-gray-700">
+                            <td className="py-1.5 px-2 font-semibold text-gray-700">
                               {item.quantity.toLocaleString()}
                             </td>
-                            <td className="py-2.5 px-3 text-gray-600">
-                              {item.color || "—"}
-                            </td>
-                            <td className="py-2.5 px-3 text-gray-700 font-medium">
+                            <td className="py-1.5 px-2 text-gray-700 font-medium truncate max-w-[120px]">
                               {item.customer}
                             </td>
-                            <td className="py-2.5 px-3 font-semibold text-gray-700">
-                              {item.targetOutput.toLocaleString()}
+                            <td className="py-1.5 px-2 text-gray-600 whitespace-nowrap">
+                              <span className="text-[11px]">
+                                {new Date(item.deadline).toLocaleDateString()}
+                              </span>
                             </td>
-                            <td className="py-2.5 px-3 text-gray-600 whitespace-nowrap">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3 text-gray-400" />
-                                <span className="text-xs">
-                                  {new Date(item.deadline).toLocaleDateString()}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="py-2.5 px-3">
+                            <td className="py-1.5 px-2">
                               <RawMaterialsSelect
                                 itemId={item.id}
                                 currentStatus={item.rawMaterials}
                               />
                             </td>
-                            <td className="py-2.5 px-3">
+                            <td className="py-1.5 px-2">
                               <span
-                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold border ${statusConfig.color}`}
+                                className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border ${statusConfig.color}`}
                               >
                                 {statusConfig.label}
                               </span>
                             </td>
-                            <td className="py-2.5 px-3 text-center">
+                            <td className="py-1.5 px-2 text-center">
                               <Link href={`/dashboard/items/${item.id}`}>
-                                <Button variant="outline" size="sm" className="text-xs h-7">
+                                <Button variant="outline" size="sm" className="text-[11px] h-6 px-2">
                                   View
                                 </Button>
                               </Link>

@@ -18,24 +18,25 @@ const COLORS = {
 
 export function ItemDistributionChart({ data, title }: { data: DistributionData[]; title?: string }) {
   return (
-    <Card className="border-2">
-      <CardHeader>
-        <CardTitle>{title || "Item Distribution"}</CardTitle>
-        <CardDescription>Breakdown by department or category</CardDescription>
+    <Card className="border h-full">
+      <CardHeader className="py-2 px-3">
+        <CardTitle className="text-xs font-semibold">{title || "Item Distribution"}</CardTitle>
+        <CardDescription className="text-[10px]">By department</CardDescription>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+      <CardContent className="p-2">
+        <ResponsiveContainer width="100%" height={150}>
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={60}
-              outerRadius={100}
+              innerRadius={40}
+              outerRadius={65}
               fill="#8884d8"
-              paddingAngle={5}
+              paddingAngle={3}
               dataKey="value"
-              label
+              label={(entry) => entry.value > 0 ? entry.value : ''}
+              labelStyle={{ fontSize: 10 }}
             >
               {data.map((entry, index) => (
                 <Cell 
@@ -44,8 +45,8 @@ export function ItemDistributionChart({ data, title }: { data: DistributionData[
                 />
               ))}
             </Pie>
-            <Tooltip />
-            <Legend />
+            <Tooltip contentStyle={{ fontSize: 11 }} />
+            <Legend wrapperStyle={{ fontSize: 10 }} />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>
