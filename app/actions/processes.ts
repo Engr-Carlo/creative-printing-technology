@@ -45,6 +45,8 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
 
     revalidatePath("/dashboard/my-processes");
     revalidatePath("/dashboard/employee");
+    revalidatePath("/dashboard/my-items");
+    revalidatePath("/dashboard/encoder");
     revalidatePath(`/dashboard/items/${process.itemId}`);
     return { success: true, process: updatedProcess };
   } catch (error) {

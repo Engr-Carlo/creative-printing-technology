@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, CheckCircle2, XCircle, AlertCircle, PlayCircle } from "lucide-react";
 import prisma from "@/lib/prisma";
@@ -9,42 +9,40 @@ import Link from "next/link";
 
 async function getMyProcesses(userId: string) {
   return prisma.process.findMany({
-    where: {
-      assignedToId: userId,
-    },
-    include: {
+    where: { assignedToId: userId },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      order: true,
       item: {
-        include: {
-          department: true,
+        select: {
+          id: true,
+          name: true,
+          itemNumber: true,
+          department: { select: { name: true } },
         },
       },
-      machine: true,
-      assignedTo: true,
+      machine: { select: { name: true } },
     },
     orderBy: { order: "asc" },
+    take: 50,
   });
 }
 
 const statusConfig = {
-  NOT_STARTED: { label: "Not Started", color: "bg-yellow-100 text-yellow-800 border-yellow-300", icon: Clock },
-  IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-800 border-blue-300", icon: PlayCircle },
-  COMPLETED: { label: "Completed", color: "bg-green-100 text-green-800 border-green-300", icon: CheckCircle2 },
-  DELAYED: { label: "Delayed", color: "bg-red-100 text-red-800 border-red-300", icon: XCircle },
+  NOT_STARTED: { label: "Not Started", color: "bg-yellow-100 text-yellow-800", icon: Clock },
+  IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-800", icon: PlayCircle },
+  COMPLETED: { label: "Completed", color: "bg-green-100 text-green-800", icon: CheckCircle2 },
+  DELAYED: { label: "Delayed", color: "bg-red-100 text-red-800", icon: XCircle },
 };
 
 export default async function MyProcessesPage() {
   const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
-  // Only Employee can access this page
-  if (session.user.role !== "EMPLOYEE") {
-    redirect("/dashboard");
-  }
+  if (!session?.user) redirect("/login");
+  if (session.user.role !== "EMPLOYEE") redirect("/dashboard");
 
   const processes = await getMyProcesses(session.user.id);
-
   const stats = {
     total: processes.length,
     pending: processes.filter((p) => p.status === "NOT_STARTED").length,
@@ -53,144 +51,79 @@ export default async function MyProcessesPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-3 p-2">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">My Processes</h1>
-        <p className="text-muted-foreground mt-1">
-          All processes assigned to you across different items
-        </p>
+        <h1 className="text-lg font-bold text-gray-900">My Processes</h1>
+        <p className="text-xs text-muted-foreground">Processes assigned to you</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-2 bg-gradient-to-br from-blue-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Processes</p>
-                <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
-              </div>
-              <AlertCircle className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-2 bg-gradient-to-br from-yellow-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
-              </div>
-              <Clock className="w-8 h-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-2 bg-gradient-to-br from-blue-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                <p className="text-3xl font-bold text-blue-600">{stats.inProgress}</p>
-              </div>
-              <PlayCircle className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-2 bg-gradient-to-br from-green-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                <p className="text-3xl font-bold text-green-600">{stats.completed}</p>
-              </div>
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-4 gap-2">
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Total</p>
+          <p className="text-lg font-bold">{stats.total}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Pending</p>
+          <p className="text-lg font-bold text-yellow-600">{stats.pending}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">In Progress</p>
+          <p className="text-lg font-bold text-blue-600">{stats.inProgress}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Completed</p>
+          <p className="text-lg font-bold text-green-600">{stats.completed}</p>
+        </CardContent></Card>
       </div>
 
-      {/* Processes Table */}
-      <Card className="border-2">
-        <CardHeader>
-          <CardTitle>All My Processes</CardTitle>
-          <CardDescription>Complete list of processes assigned to you</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Process</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Item</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Department</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Machine</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Order</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Actions</th>
+      <Card className="border">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
+            <table className="w-full text-[11px]">
+              <thead className="sticky top-0 bg-white z-10">
+                <tr className="border-b bg-muted/30">
+                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Process</th>
+                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Item</th>
+                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Dept</th>
+                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Machine</th>
+                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">#</th>
+                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Status</th>
+                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {processes.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-12 text-muted-foreground">
-                      <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                      <p className="font-medium">No processes assigned yet</p>
-                      <p className="text-sm mt-1">You don't have any processes assigned to you at the moment</p>
+                    <td colSpan={7} className="text-center py-8 text-muted-foreground text-xs">
+                      <AlertCircle className="w-6 h-6 mx-auto mb-1 text-gray-400" />
+                      No processes assigned yet
                     </td>
                   </tr>
                 ) : (
                   processes.map((process) => {
                     const config = statusConfig[process.status as keyof typeof statusConfig];
-                    const StatusIcon = config?.icon || Clock;
-
                     return (
-                      <tr key={process.id} className="border-b hover:bg-gray-50 transition-colors">
-                        <td className="py-4 px-4">
-                          <span className="font-semibold text-primary">{process.name}</span>
+                      <tr key={process.id} className="border-b hover:bg-muted/20">
+                        <td className="py-1.5 px-2 font-semibold text-primary">{process.name}</td>
+                        <td className="py-1.5 px-2">
+                          <span className="font-medium">{process.item.name}</span>
+                          <span className="text-muted-foreground ml-1 font-mono text-[10px]">{process.item.itemNumber}</span>
                         </td>
-                        <td className="py-4 px-4">
-                          <div>
-                            <p className="font-medium">{process.item.name}</p>
-                            <p className="text-xs text-muted-foreground font-mono">
-                              {process.item.itemNumber}
-                            </p>
-                          </div>
+                        <td className="py-1.5 px-2 text-muted-foreground">{process.item.department.name}</td>
+                        <td className="py-1.5 px-2">{process.machine?.name || <span className="text-gray-400">-</span>}</td>
+                        <td className="py-1.5 px-2">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">{process.order}</span>
                         </td>
-                        <td className="py-4 px-4">
-                          <span className="text-sm bg-gray-100 px-2.5 py-1 rounded font-medium">
-                            {process.item.department.name}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4">
-                          {process.machine ? (
-                            <span className="text-sm">{process.machine.name}</span>
-                          ) : (
-                            <span className="text-sm text-gray-400">Not assigned</span>
-                          )}
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 text-sm font-bold">
-                            {process.order}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${config?.color}`}>
-                            <StatusIcon className="w-3 h-3" />
+                        <td className="py-1.5 px-2">
+                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${config?.color}`}>
                             {config?.label}
                           </span>
                         </td>
-                        <td className="py-4 px-4">
-                          <div className="flex items-center gap-2">
-                            <ProcessStatusButton
-                              processId={process.id}
-                              currentStatus={process.status}
-                              processName={process.name}
-                            />
+                        <td className="py-1.5 px-2">
+                          <div className="flex items-center gap-1">
+                            <ProcessStatusButton processId={process.id} currentStatus={process.status} processName={process.name} />
                             <Link href={`/dashboard/items/${process.item.id}`}>
-                              <Button variant="outline" size="sm" className="text-xs">
-                                View Item
-                              </Button>
+                              <Button variant="outline" size="sm" className="h-5 text-[10px] px-2">Item</Button>
                             </Link>
                           </div>
                         </td>

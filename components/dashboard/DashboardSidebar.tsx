@@ -10,6 +10,8 @@ import {
   BarChart3,
   Users,
   Building2,
+  Cog,
+  ListTodo,
 } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -32,10 +34,10 @@ const navigation = [
   { name: "Items", href: "/dashboard/items", icon: Package, roles: ["ENCODER"] },
   { name: "Assignments", href: "/dashboard/assignments", icon: Users, roles: ["ENCODER"] },
   
-  // Employee navigation
+  // Employee / Line Leader navigation
   { name: "Dashboard", href: "/dashboard/employee", icon: LayoutDashboard, roles: ["EMPLOYEE"] },
   { name: "My Items", href: "/dashboard/my-items", icon: Package, roles: ["EMPLOYEE"] },
-  { name: "My Processes", href: "/dashboard/my-processes", icon: LayoutDashboard, roles: ["EMPLOYEE"] },
+  { name: "My Processes", href: "/dashboard/my-processes", icon: ListTodo, roles: ["EMPLOYEE"] },
   
   // Common for all
   { name: "Settings", href: "/dashboard/settings", icon: Settings, roles: ["ADMIN", "ENCODER", "EMPLOYEE"] },

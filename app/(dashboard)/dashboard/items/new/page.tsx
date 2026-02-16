@@ -27,7 +27,7 @@ export default async function NewItemPage() {
   const departments = await getDepartments();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 p-2">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/dashboard/items">
@@ -36,10 +36,8 @@ export default async function NewItemPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create New Item</h1>
-          <p className="text-muted-foreground mt-1">
-            Add a new production item to the system
-          </p>
+          <h1 className="text-lg font-bold text-gray-900">Create New Item</h1>
+          <p className="text-xs text-muted-foreground">Add a new production item</p>
         </div>
       </div>
 

@@ -210,7 +210,7 @@ export default async function EncoderDashboardPage({
                   <p className="text-xs font-medium text-foreground/60">
                     {stat.title}
                   </p>
-                  <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                  <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
                 </div>
                 <div
                   className={`w-8 h-8 rounded-lg ${stat.iconBg} flex items-center justify-center`}

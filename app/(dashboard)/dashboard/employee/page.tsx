@@ -1,297 +1,399 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Clock, CheckCircle2, ListTodo } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Package, Clock, CheckCircle2, AlertCircle, Cog, Users, Monitor } from "lucide-react";
 import prisma from "@/lib/prisma";
+import Link from "next/link";
+import { ProcessStatusButton } from "@/components/ProcessStatusButton";
+import { ProductionTrendChart } from "@/components/charts/ProductionTrendChart";
+import { ItemDistributionChart } from "@/components/charts/ItemDistributionChart";
 
-async function getEmployeeStats(userId: string) {
-  const [assignedItems, pendingProcesses, completedProcesses] = await Promise.all([
-    prisma.itemAssignment.count({
-      where: { userId },
-    }),
-    prisma.process.count({
-      where: {
-        assignedToId: userId,
-        status: { in: ["NOT_STARTED", "IN_PROGRESS"] },
-      },
-    }),
-    prisma.process.count({
-      where: {
-        assignedToId: userId,
-        status: "COMPLETED",
-      },
-    }),
-  ]);
-
-  return {
-    assignedItems,
-    pendingProcesses,
-    completedProcesses,
-  };
-}
-
-async function getMyAssignedItems(userId: string) {
-  return prisma.item.findMany({
-    where: {
-      assignments: {
-        some: { userId },
-      },
+async function getLineLeaderData(userId: string, selectedItemId?: string) {
+  // Get user with department
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      departmentId: true,
+      department: { select: { id: true, name: true, type: true } },
     },
-    include: {
-      department: true,
+  });
+
+  if (!user) return null;
+
+  // Get all items in the user's department (or assigned to user if no department)
+  const whereClause = user.departmentId
+    ? { departmentId: user.departmentId }
+    : { assignments: { some: { userId } } };
+
+  const items = await prisma.item.findMany({
+    where: whereClause,
+    select: {
+      id: true,
+      name: true,
+      itemNumber: true,
+      status: true,
+      currentOutput: true,
+      targetOutput: true,
+      deadline: true,
+      customer: true,
+      type: true,
+      rawMaterials: true,
       processes: {
-        where: { assignedToId: userId },
+        select: {
+          id: true,
+          name: true,
+          order: true,
+          status: true,
+          machine: { select: { name: true } },
+          assignedTo: { select: { name: true } },
+        },
         orderBy: { order: "asc" },
       },
     },
     orderBy: { createdAt: "desc" },
-    take: 10,
+    take: 50,
   });
+
+  // Compute stats
+  const totalOutput = items.reduce((s, i) => s + i.currentOutput, 0);
+  const totalTarget = items.reduce((s, i) => s + i.targetOutput, 0);
+  const allProcesses = items.flatMap((i) => i.processes);
+  const completedProc = allProcesses.filter((p) => p.status === "COMPLETED").length;
+  const inProgressProc = allProcesses.filter((p) => p.status === "IN_PROGRESS").length;
+  const delayedProc = allProcesses.filter((p) => p.status === "DELAYED").length;
+  const pendingProc = allProcesses.filter((p) => p.status === "NOT_STARTED").length;
+  const completionPct = allProcesses.length > 0 ? Math.round((completedProc / allProcesses.length) * 100) : 0;
+  const inProgressPct = allProcesses.length > 0 ? Math.round((inProgressProc / allProcesses.length) * 100) : 0;
+
+  // Nearest deadline
+  const activeItems = items.filter((i) => i.status !== "COMPLETED");
+  const nearestDeadline = activeItems.length > 0
+    ? activeItems.reduce((min, i) => (i.deadline < min ? i.deadline : min), activeItems[0].deadline)
+    : null;
+
+  // Distribution by status for donut chart
+  const statusDist = [
+    { name: "Completed", value: items.filter((i) => i.status === "COMPLETED").length },
+    { name: "In Progress", value: items.filter((i) => i.status === "IN_PROGRESS").length },
+    { name: "Pending", value: items.filter((i) => i.status === "PENDING").length },
+    { name: "Delayed", value: items.filter((i) => i.status === "DELAYED").length },
+  ].filter((d) => d.value > 0);
+
+  // Trend data (simple: by item creation, get last 7 days)
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    date.setHours(0, 0, 0, 0);
+    return date;
+  });
+  const trendData = last7Days.map((date) => {
+    const nextDay = new Date(date);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const dayProcs = allProcesses.filter(() => true); // All processes (simplified)
+    return {
+      date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      completed: completedProc,
+      inProgress: inProgressProc,
+      pending: pendingProc,
+    };
+  });
+
+  // Selected item (first item or by ID)
+  const selectedItem = selectedItemId
+    ? items.find((i) => i.id === selectedItemId) || items[0]
+    : items[0];
+
+  return {
+    user,
+    items,
+    selectedItem,
+    stats: {
+      totalItems: items.length,
+      totalOutput,
+      totalTarget,
+      completedProc,
+      inProgressProc,
+      delayedProc,
+      pendingProc,
+      completionPct,
+      inProgressPct,
+      nearestDeadline,
+    },
+    statusDist,
+    trendData,
+  };
 }
 
-async function getMyProcesses(userId: string) {
-  return prisma.process.findMany({
-    where: {
-      assignedToId: userId,
-      status: { not: "COMPLETED" },
-    },
-    include: {
-      item: {
-        include: {
-          department: true,
-        },
-      },
-      machine: true,
-    },
-    orderBy: { createdAt: "desc" },
-    take: 5,
-  });
-}
+const processStatusColors: Record<string, string> = {
+  COMPLETED: "bg-green-500 text-white",
+  IN_PROGRESS: "bg-blue-500 text-white",
+  DELAYED: "bg-red-500 text-white",
+  NOT_STARTED: "bg-gray-300 text-gray-700",
+};
 
-export default async function EmployeeDashboardPage() {
+const processStatusLabels: Record<string, string> = {
+  COMPLETED: "Done",
+  IN_PROGRESS: "On-Going",
+  DELAYED: "Delay",
+  NOT_STARTED: "Pending",
+};
+
+export default async function EmployeeDashboardPage(props: {
+  searchParams: Promise<{ item?: string }>;
+}) {
   const session = await auth();
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+  if (!session?.user?.id) redirect("/login");
 
-  const stats = await getEmployeeStats(session.user.id);
-  const myItems = await getMyAssignedItems(session.user.id);
-  const myProcesses = await getMyProcesses(session.user.id);
+  const searchParams = await props.searchParams;
+  const data = await getLineLeaderData(session.user.id, searchParams.item);
+  if (!data) redirect("/login");
 
-  const statCards = [
-    {
-      title: "Assigned Items",
-      value: stats.assignedItems,
-      icon: Package,
-      color: "text-blue-600",
-      bgColor: "bg-gradient-to-br from-blue-500/10 to-blue-600/5",
-      iconBg: "bg-blue-500",
-      shadow: "shadow-blue-500/20",
-    },
-    {
-      title: "Pending Tasks",
-      value: stats.pendingProcesses,
-      icon: Clock,
-      color: "text-orange-600",
-      bgColor: "bg-gradient-to-br from-orange-500/10 to-orange-600/5",
-      iconBg: "bg-primary",
-      shadow: "shadow-primary/20",
-    },
-    {
-      title: "Completed",
-      value: stats.completedProcesses,
-      icon: CheckCircle2,
-      color: "text-green-600",
-      bgColor: "bg-gradient-to-br from-green-500/10 to-green-600/5",
-      iconBg: "bg-green-500",
-      shadow: "shadow-green-500/20",
-    },
-  ];
+  const { user, items, selectedItem, stats, statusDist, trendData } = data;
+  const deptName = user.department?.name || "My Department";
+  const overallStatus = stats.completionPct === 100 ? "COMPLETE" : 
+    stats.delayedProc > 0 ? "INCOMPLETE" : "IN PROGRESS";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">My Dashboard</h2>
-        <p className="text-muted-foreground">
-          Your assigned items and processes
-        </p>
+    <div className="flex flex-col h-full">
+      {/* Orange Header Bar */}
+      <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-sm font-bold">{user.name}</h1>
+            <p className="text-[10px] opacity-80">(line leader)</p>
+          </div>
+          <div className="h-8 w-px bg-white/30" />
+          <div>
+            <p className="text-[10px] opacity-80">Department</p>
+            <p className="text-sm font-bold">{deptName.toUpperCase()}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-center">
+            <p className="text-[10px] opacity-80">Current Output</p>
+            <p className="text-lg font-bold">{stats.totalOutput}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] opacity-80">Target Output</p>
+            <p className="text-lg font-bold">{stats.totalTarget}</p>
+          </div>
+          <div className="h-8 w-px bg-white/30" />
+          <div className="text-center">
+            <p className="text-[10px] opacity-80">Nearest Deadline</p>
+            <p className="text-sm font-bold">
+              {stats.nearestDeadline
+                ? new Date(stats.nearestDeadline).toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()
+                : "N/A"}
+            </p>
+          </div>
+          <div className={`px-3 py-1 rounded text-xs font-bold ${
+            overallStatus === "COMPLETE" ? "bg-green-700" :
+            overallStatus === "INCOMPLETE" ? "bg-red-700" : "bg-blue-700"
+          }`}>
+            {overallStatus}
+          </div>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-6 md:grid-cols-3">
-        {statCards.map((stat) => (
-          <Card
-            key={stat.title}
-            className={`${stat.bgColor} border-0 shadow-lg ${stat.shadow} hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1`}
-          >
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-semibold text-foreground/80">
-                {stat.title}
-              </CardTitle>
-              <div
-                className={`w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center shadow-lg`}
-              >
-                <stat.icon className="w-5 h-5 text-white" />
+      {/* Main Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar - Items List */}
+        <div className="w-48 border-r bg-gray-50 flex flex-col overflow-y-auto">
+          <div className="px-2 py-1.5 border-b bg-gray-100">
+            <p className="text-[10px] font-bold text-gray-500 uppercase">Items ({items.length})</p>
+          </div>
+          {items.map((item) => (
+            <Link
+              key={item.id}
+              href={`/dashboard/employee?item=${item.id}`}
+              className={`block px-2 py-1.5 border-b text-[11px] hover:bg-orange-50 transition-colors ${
+                selectedItem?.id === item.id ? "bg-orange-100 border-l-2 border-l-orange-500" : ""
+              }`}
+            >
+              <p className="font-mono font-bold text-blue-600">{item.itemNumber}</p>
+              <p className="text-gray-600 truncate">{item.name}</p>
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  item.status === "COMPLETED" ? "bg-green-500" :
+                  item.status === "IN_PROGRESS" ? "bg-blue-500" :
+                  item.status === "DELAYED" ? "bg-red-500" : "bg-yellow-500"
+                }`} />
+                <span className="text-[10px] text-gray-500">{item.status.replace("_", " ")}</span>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-3xl font-bold ${stat.color}`}>
-                {stat.value}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </Link>
+          ))}
+          {items.length === 0 && (
+            <div className="p-3 text-center text-[10px] text-gray-400">No items</div>
+          )}
+        </div>
 
-      {/* My Active Processes */}
-      <Card className="shadow-lg">
-        <CardHeader className="border-b bg-gradient-to-r from-muted/30 to-muted/10">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
-            <ListTodo className="w-5 h-5" />
-            My Active Processes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            {myProcesses.length === 0 ? (
-              <div className="text-center py-12">
-                <Clock className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-                <p className="text-sm text-muted-foreground font-medium">
-                  No active processes assigned to you.
-                </p>
+        {/* Center Content */}
+        <div className="flex-1 flex flex-col overflow-y-auto p-3 space-y-3">
+          {selectedItem ? (
+            <>
+              {/* Selected Item Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-bold">
+                    <span className="text-blue-600 font-mono">{selectedItem.itemNumber}</span>
+                    <span className="ml-2">{selectedItem.name}</span>
+                  </h2>
+                  <p className="text-[10px] text-muted-foreground">
+                    Customer: {selectedItem.customer} • Type: {selectedItem.type} •
+                    Output: {selectedItem.currentOutput}/{selectedItem.targetOutput}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    selectedItem.rawMaterials === "AVAILABLE" ? "bg-green-100 text-green-700" :
+                    selectedItem.rawMaterials === "DONE" ? "bg-blue-100 text-blue-700" :
+                    selectedItem.rawMaterials === "PROCESSING" ? "bg-orange-100 text-orange-700" :
+                    "bg-red-100 text-red-700"
+                  }`}>Raw: {selectedItem.rawMaterials}</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    selectedItem.status === "COMPLETED" ? "bg-green-100 text-green-700" :
+                    selectedItem.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
+                    selectedItem.status === "DELAYED" ? "bg-red-100 text-red-700" :
+                    "bg-yellow-100 text-yellow-700"
+                  }`}>{selectedItem.status.replace("_", " ")}</span>
+                </div>
               </div>
-            ) : (
-              myProcesses.map((process) => (
-                <div
-                  key={process.id}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-gradient-to-r from-background to-muted/20 hover:shadow-md transition-all hover:border-primary/50"
-                >
-                  <div className="space-y-1 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-base">
-                        {process.item.name}
-                      </p>
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
-                        {process.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs font-medium">
-                        {process.item.itemNumber}
-                      </span>
-                      <span>•</span>
-                      <span className="font-medium">
-                        {process.item.department.name}
-                      </span>
-                      {process.machine && (
-                        <>
-                          <span>•</span>
-                          <span>{process.machine.name}</span>
-                        </>
+
+              {/* Process / Machine / Employee Table */}
+              <Card className="border">
+                <CardContent className="p-0">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className="border-b bg-muted/30">
+                        <th className="text-left py-1.5 px-3 font-bold text-muted-foreground w-8">#</th>
+                        <th className="text-left py-1.5 px-3 font-bold text-muted-foreground">
+                          <div className="flex items-center gap-1"><Cog className="w-3 h-3" />PROCESSES</div>
+                        </th>
+                        <th className="text-left py-1.5 px-3 font-bold text-muted-foreground">STATUS</th>
+                        <th className="text-left py-1.5 px-3 font-bold text-muted-foreground">
+                          <div className="flex items-center gap-1"><Monitor className="w-3 h-3" />MACHINES</div>
+                        </th>
+                        <th className="text-left py-1.5 px-3 font-bold text-muted-foreground">
+                          <div className="flex items-center gap-1"><Users className="w-3 h-3" />EMPLOYEES</div>
+                        </th>
+                        <th className="text-left py-1.5 px-3 font-bold text-muted-foreground">ACTION</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedItem.processes.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="text-center py-6 text-muted-foreground text-xs">
+                            No processes defined for this item
+                          </td>
+                        </tr>
+                      ) : (
+                        selectedItem.processes.map((proc) => (
+                          <tr key={proc.id} className="border-b hover:bg-muted/20">
+                            <td className="py-1.5 px-3">
+                              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-700 text-[10px] font-bold">
+                                {proc.order}
+                              </span>
+                            </td>
+                            <td className="py-1.5 px-3 font-semibold">{proc.name}</td>
+                            <td className="py-1.5 px-3">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${processStatusColors[proc.status]}`}>
+                                {processStatusLabels[proc.status]}
+                              </span>
+                            </td>
+                            <td className="py-1.5 px-3 text-muted-foreground">
+                              {proc.machine?.name || <span className="text-gray-300">-</span>}
+                            </td>
+                            <td className="py-1.5 px-3 text-muted-foreground">
+                              {proc.assignedTo?.name || <span className="text-gray-300">-</span>}
+                            </td>
+                            <td className="py-1.5 px-3">
+                              <ProcessStatusButton
+                                processId={proc.id}
+                                currentStatus={proc.status}
+                                processName={proc.name}
+                              />
+                            </td>
+                          </tr>
+                        ))
                       )}
-                    </div>
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+
+              {/* Item Progress Bar */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between text-[10px] mb-1">
+                    <span className="font-semibold">Item Progress</span>
+                    <span className="text-muted-foreground">
+                      {selectedItem.processes.filter((p) => p.status === "COMPLETED").length}/{selectedItem.processes.length} processes done
+                    </span>
                   </div>
-                  <div className="text-right">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold shadow-sm ${
-                        process.status === "COMPLETED"
-                          ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
-                          : process.status === "IN_PROGRESS"
-                          ? "bg-gradient-to-r from-orange-500 to-primary text-white"
-                          : process.status === "NOT_STARTED"
-                          ? "bg-gradient-to-r from-gray-400 to-gray-500 text-white"
-                          : "bg-gradient-to-r from-red-500 to-red-600 text-white"
-                      }`}
-                    >
-                      {process.status.replace("_", " ")}
-                    </div>
+                      className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full"
+                      style={{
+                        width: `${selectedItem.processes.length > 0 
+                          ? Math.round((selectedItem.processes.filter((p) => p.status === "COMPLETED").length / selectedItem.processes.length) * 100) 
+                          : 0}%`,
+                      }}
+                    />
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* My Assigned Items */}
-      <Card className="shadow-lg">
-        <CardHeader className="border-b bg-gradient-to-r from-muted/30 to-muted/10">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
-            <Package className="w-5 h-5" />
-            My Assigned Items
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            {myItems.length === 0 ? (
-              <div className="text-center py-12">
-                <Package className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-                <p className="text-sm text-muted-foreground font-medium">
-                  No items assigned to you yet.
-                </p>
+                <div className="text-right">
+                  <p className="text-xs font-bold">
+                    Deadline: {new Date(selectedItem.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </p>
+                </div>
               </div>
-            ) : (
-              myItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-4 rounded-lg border bg-gradient-to-r from-background to-muted/20 hover:shadow-md transition-all hover:border-primary/50"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="space-y-1">
-                      <p className="font-semibold text-base">{item.name}</p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs font-medium">
-                          {item.itemNumber}
-                        </span>
-                        <span>•</span>
-                        <span className="font-medium">{item.department.name}</span>
-                      </div>
-                    </div>
-                    <div
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold shadow-sm ${
-                        item.status === "COMPLETED"
-                          ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
-                          : item.status === "IN_PROGRESS"
-                          ? "bg-gradient-to-r from-orange-500 to-primary text-white"
-                          : item.status === "PENDING"
-                          ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900"
-                          : "bg-gradient-to-r from-red-500 to-red-600 text-white"
-                      }`}
-                    >
-                      {item.status.replace("_", " ")}
-                    </div>
-                  </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+              <div className="text-center">
+                <Package className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                <p>No items in your department</p>
+              </div>
+            </div>
+          )}
 
-                  {/* Processes for this item */}
-                  {item.processes.length > 0 && (
-                    <div className="mt-3 pt-3 border-t">
-                      <p className="text-xs font-semibold text-muted-foreground mb-2">
-                        My Processes:
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {item.processes.map((proc) => (
-                          <div
-                            key={proc.id}
-                            className={`px-2 py-1 rounded text-xs font-medium ${
-                              proc.status === "COMPLETED"
-                                ? "bg-green-100 text-green-800"
-                                : proc.status === "IN_PROGRESS"
-                                ? "bg-orange-100 text-orange-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {proc.name}: {proc.status.replace("_", " ")}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+          {/* Bottom Charts & Stats */}
+          <div className="grid grid-cols-3 gap-3">
+            {/* Stats Card */}
+            <Card className="border">
+              <CardContent className="p-3 space-y-2">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Summary</p>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Completed</span>
+                    <span className="font-bold text-green-600">{stats.completionPct}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" /> On-Going</span>
+                    <span className="font-bold text-blue-600">{stats.inProgressPct}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Delayed</span>
+                    <span className="font-bold text-red-600">{stats.delayedProc}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-400" /> Pending</span>
+                    <span className="font-bold">{stats.pendingProc}</span>
+                  </div>
                 </div>
-              ))
-            )}
+              </CardContent>
+            </Card>
+
+            {/* Donut Chart */}
+            <ItemDistributionChart data={statusDist} title="Status Distribution" />
+
+            {/* Production Trend Line Chart */}
+            <ProductionTrendChart data={trendData} />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

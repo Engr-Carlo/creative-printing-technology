@@ -1,6 +1,6 @@
-import { auth } from "@/lib/auth";
+﻿import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Package, Clock, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
@@ -9,199 +9,141 @@ import Link from "next/link";
 async function getMyItems(userId: string) {
   return prisma.item.findMany({
     where: {
-      assignments: {
-        some: {
-          userId: userId,
-        },
-      },
+      assignments: { some: { userId } },
     },
-    include: {
-      department: true,
+    select: {
+      id: true,
+      name: true,
+      itemNumber: true,
+      type: true,
+      status: true,
+      currentOutput: true,
+      targetOutput: true,
+      deadline: true,
+      department: { select: { name: true } },
       processes: {
-        where: {
-          assignedToId: userId,
-        },
+        where: { assignedToId: userId },
+        select: { id: true, name: true, status: true },
+        orderBy: { order: "asc" },
       },
     },
     orderBy: { createdAt: "desc" },
+    take: 50,
   });
 }
 
 const statusConfig = {
-  PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-800 border-yellow-300", icon: Clock },
-  IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-800 border-blue-300", icon: AlertCircle },
-  COMPLETED: { label: "Completed", color: "bg-green-100 text-green-800 border-green-300", icon: CheckCircle2 },
-  DELAYED: { label: "Delayed", color: "bg-red-100 text-red-800 border-red-300", icon: XCircle },
+  PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-800", icon: Clock },
+  IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-800", icon: AlertCircle },
+  COMPLETED: { label: "Completed", color: "bg-green-100 text-green-800", icon: CheckCircle2 },
+  DELAYED: { label: "Delayed", color: "bg-red-100 text-red-800", icon: XCircle },
 };
 
 export default async function MyItemsPage() {
   const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
-  // Only Employee can access this page
-  if (session.user.role !== "EMPLOYEE") {
-    redirect("/dashboard");
-  }
+  if (!session?.user) redirect("/login");
+  if (session.user.role !== "EMPLOYEE") redirect("/dashboard");
 
   const items = await getMyItems(session.user.id);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-3 p-2">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">My Items</h1>
-        <p className="text-muted-foreground mt-1">
-          Items assigned to you for production
-        </p>
+        <h1 className="text-lg font-bold text-gray-900">My Items</h1>
+        <p className="text-xs text-muted-foreground">Items assigned to you</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-2">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Assigned</p>
-                <p className="text-2xl font-bold">{items.length}</p>
-              </div>
-              <Package className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-2">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold">
-                  {items.filter((i) => i.status === "PENDING").length}
-                </p>
-              </div>
-              <Clock className="w-8 h-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-2">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold">
-                  {items.filter((i) => i.status === "IN_PROGRESS").length}
-                </p>
-              </div>
-              <AlertCircle className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-2">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold">
-                  {items.filter((i) => i.status === "COMPLETED").length}
-                </p>
-              </div>
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-4 gap-2">
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Assigned</p>
+          <p className="text-lg font-bold">{items.length}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Pending</p>
+          <p className="text-lg font-bold text-yellow-600">{items.filter((i) => i.status === "PENDING").length}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">In Progress</p>
+          <p className="text-lg font-bold text-blue-600">{items.filter((i) => i.status === "IN_PROGRESS").length}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Completed</p>
+          <p className="text-lg font-bold text-green-600">{items.filter((i) => i.status === "COMPLETED").length}</p>
+        </CardContent></Card>
       </div>
 
-      {/* Items Grid */}
       {items.length === 0 ? (
-        <Card className="border-2">
-          <CardContent className="pt-12 pb-12">
-            <div className="text-center text-muted-foreground">
-              <Package className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-semibold mb-2">No items assigned yet</h3>
-              <p className="text-sm">You don't have any items assigned to you at the moment.</p>
-              <p className="text-sm">Check back later or contact your supervisor.</p>
-            </div>
+        <Card className="border">
+          <CardContent className="py-8 text-center text-muted-foreground text-xs">
+            <Package className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+            No items assigned yet
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {items.map((item) => {
-            const config = statusConfig[item.status as keyof typeof statusConfig];
-            const StatusIcon = config?.icon || Clock;
-            const progress = item.targetOutput > 0 
-              ? Math.round((item.currentOutput / item.targetOutput) * 100)
-              : 0;
-
-            return (
-              <Card key={item.id} className="border-2 hover:border-primary/50 transition-colors">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{item.name}</CardTitle>
-                      <CardDescription className="font-mono text-xs mt-1">
-                        {item.itemNumber}
-                      </CardDescription>
-                    </div>
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${config?.color}`}>
-                      <StatusIcon className="w-3 h-3" />
-                      {config?.label}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Department</span>
-                      <span className="font-semibold">{item.department.name}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Type</span>
-                      <span className="font-semibold">{item.type}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Quantity</span>
-                      <span className="font-semibold">
-                        {item.currentOutput.toLocaleString()} / {item.targetOutput.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">My Processes</span>
-                      <span className="font-semibold">{item.processes.length}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground font-medium">Progress</span>
-                      <span className="font-bold text-primary">{progress}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div
-                        className="bg-gradient-to-r from-primary to-orange-600 h-3 rounded-full transition-all"
-                        style={{ width: `${Math.min(progress, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {item.deadline && (
-                    <div className="flex items-center justify-between text-sm pt-2 border-t">
-                      <span className="text-muted-foreground">Deadline</span>
-                      <span className="font-semibold">
-                        {new Date(item.deadline).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-
-                  <Link href={`/dashboard/items/${item.id}`}>
-                    <Button variant="outline" className="w-full">
-                      View Details
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        <Card className="border">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
+              <table className="w-full text-[11px]">
+                <thead className="sticky top-0 bg-white z-10">
+                  <tr className="border-b bg-muted/30">
+                    <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Item #</th>
+                    <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Name</th>
+                    <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Dept</th>
+                    <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Output</th>
+                    <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Status</th>
+                    <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">My Processes</th>
+                    <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Deadline</th>
+                    <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => {
+                    const config = statusConfig[item.status as keyof typeof statusConfig];
+                    const progress = item.targetOutput > 0 ? Math.round((item.currentOutput / item.targetOutput) * 100) : 0;
+                    return (
+                      <tr key={item.id} className="border-b hover:bg-muted/20">
+                        <td className="py-1.5 px-2 font-mono font-semibold text-blue-600">{item.itemNumber}</td>
+                        <td className="py-1.5 px-2 font-medium">{item.name}</td>
+                        <td className="py-1.5 px-2 text-muted-foreground">{item.department.name}</td>
+                        <td className="py-1.5 px-2">
+                          <div className="flex items-center gap-1">
+                            <span className="font-semibold">{item.currentOutput}/{item.targetOutput}</span>
+                            <span className="text-[10px] text-muted-foreground">({progress}%)</span>
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${config?.color}`}>
+                            {config?.label}
+                          </span>
+                        </td>
+                        <td className="py-1.5 px-2">
+                          <div className="flex flex-wrap gap-1">
+                            {item.processes.map((proc) => (
+                              <span key={proc.id} className={`px-1 py-0.5 rounded text-[10px] font-medium ${
+                                proc.status === "COMPLETED" ? "bg-green-100 text-green-700" :
+                                proc.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
+                                proc.status === "DELAYED" ? "bg-red-100 text-red-700" :
+                                "bg-gray-100 text-gray-700"
+                              }`}>{proc.name}</span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2 text-muted-foreground">
+                          {item.deadline ? new Date(item.deadline).toLocaleDateString() : "-"}
+                        </td>
+                        <td className="py-1.5 px-2">
+                          <Link href={`/dashboard/items/${item.id}`}>
+                            <Button variant="outline" size="sm" className="h-5 text-[10px] px-2">View</Button>
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

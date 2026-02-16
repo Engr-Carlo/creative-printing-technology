@@ -105,40 +105,19 @@ export default async function AssignmentsPage() {
       </div>
 
       {/* Stats Cards - Compact */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Card className="border-2 bg-gradient-to-br from-blue-50 to-white">
-          <CardContent className="pt-4 pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Total Items</p>
-                <p className="text-2xl font-bold text-blue-600">{data.totalItems}</p>
-              </div>
-              <Package className="w-6 h-6 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-2 bg-gradient-to-br from-green-50 to-white">
-          <CardContent className="pt-4 pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Assigned</p>
-                <p className="text-2xl font-bold text-green-600">{data.assignedItems}</p>
-              </div>
-              <UserCheck className="w-6 h-6 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-2 bg-gradient-to-br from-orange-50 to-white">
-          <CardContent className="pt-4 pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Unassigned</p>
-                <p className="text-2xl font-bold text-orange-600">{data.unassignedItems}</p>
-              </div>
-              <AlertCircle className="w-6 h-6 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Total Items</p>
+          <p className="text-lg font-bold text-blue-600">{data.totalItems}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Assigned</p>
+          <p className="text-lg font-bold text-green-600">{data.assignedItems}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Unassigned</p>
+          <p className="text-lg font-bold text-orange-600">{data.unassignedItems}</p>
+        </CardContent></Card>
       </div>
 
       {data.unassignedItems > 0 && (

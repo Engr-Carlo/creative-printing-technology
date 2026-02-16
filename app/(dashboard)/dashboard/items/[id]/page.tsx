@@ -70,17 +70,17 @@ export default async function ItemDetailPage({
   const processProgress = totalProcesses > 0 ? Math.round((completedProcesses / totalProcesses) * 100) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 p-2">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <Link href="/dashboard/items">
             <Button variant="outline" size="icon">
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{item.name}</h1>
+            <h1 className="text-lg font-bold text-gray-900">{item.name}</h1>
             <p className="text-muted-foreground mt-1 font-mono text-sm">
               {item.itemNumber}
             </p>
@@ -93,70 +93,30 @@ export default async function ItemDetailPage({
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-2">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Output Progress</p>
-                <p className="text-2xl font-bold text-primary">{progress}%</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {item.currentOutput.toLocaleString()} / {item.targetOutput.toLocaleString()}
-                </p>
-              </div>
-              <Package className="w-8 h-8 text-primary" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Process Progress</p>
-                <p className="text-2xl font-bold text-blue-600">{processProgress}%</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {completedProcesses} / {totalProcesses} completed
-                </p>
-              </div>
-              <CheckCircle2 className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Department</p>
-                <p className="text-lg font-bold">{item.department.name}</p>
-              </div>
-              <Building2 className="w-8 h-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Deadline</p>
-                <p className="text-sm font-bold">
-                  {new Date(item.deadline).toLocaleDateString()}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {new Date(item.deadline).toLocaleTimeString()}
-                </p>
-              </div>
-              <Calendar className="w-8 h-8 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-4 gap-2">
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Output</p>
+          <p className="text-lg font-bold text-primary">{progress}%</p>
+          <p className="text-[10px] text-muted-foreground">{item.currentOutput}/{item.targetOutput}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Processes</p>
+          <p className="text-lg font-bold text-blue-600">{processProgress}%</p>
+          <p className="text-[10px] text-muted-foreground">{completedProcesses}/{totalProcesses}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Department</p>
+          <p className="text-sm font-bold">{item.department.name}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Deadline</p>
+          <p className="text-sm font-bold">{new Date(item.deadline).toLocaleDateString()}</p>
+        </CardContent></Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Item Details */}
-        <Card className="border-2 lg:col-span-2">
+        <Card className="border lg:col-span-2">
           <CardHeader>
             <CardTitle>Item Details</CardTitle>
             <CardDescription>Complete information about this item</CardDescription>
@@ -222,7 +182,7 @@ export default async function ItemDetailPage({
         </Card>
 
         {/* Assigned Users */}
-        <Card className="border-2">
+        <Card className="border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="w-5 h-5 text-primary" />
@@ -261,11 +221,11 @@ export default async function ItemDetailPage({
       </div>
 
       {/* Processes */}
-      <Card className="border-2">
-        <CardHeader>
-          <CardTitle>Production Processes</CardTitle>
-          <CardDescription>
-            Sequential workflow for this item ({completedProcesses} of {totalProcesses} completed)
+      <Card className="border">
+        <CardHeader className="p-3">
+          <CardTitle className="text-sm">Production Processes</CardTitle>
+          <CardDescription className="text-xs">
+            {completedProcesses} of {totalProcesses} completed
           </CardDescription>
         </CardHeader>
         <CardContent>

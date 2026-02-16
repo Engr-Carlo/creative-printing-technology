@@ -42,86 +42,52 @@ export default async function UsersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 p-2">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage system users and their roles
-          </p>
+          <h1 className="text-lg font-bold text-gray-900">User Management</h1>
+          <p className="text-xs text-muted-foreground">Manage system users and their roles</p>
         </div>
-        <Button size="lg" className="shadow-lg">
-          <UserPlus className="w-5 h-5 mr-2" />
-          Add New User
+        <Button size="sm" className="h-7 text-xs">
+          <UserPlus className="w-3.5 h-3.5 mr-1" />
+          Add User
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-2 bg-gradient-to-br from-blue-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Users</p>
-                <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
-              </div>
-              <Users className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-2 bg-gradient-to-br from-purple-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Administrators</p>
-                <p className="text-3xl font-bold text-purple-600">{stats.admins}</p>
-              </div>
-              <Shield className="w-8 h-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-2 bg-gradient-to-br from-blue-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Encoders</p>
-                <p className="text-3xl font-bold text-blue-600">{stats.encoders}</p>
-              </div>
-              <Briefcase className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-2 bg-gradient-to-br from-green-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Employees</p>
-                <p className="text-3xl font-bold text-green-600">{stats.employees}</p>
-              </div>
-              <User className="w-8 h-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-4 gap-2">
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Total</p>
+          <p className="text-lg font-bold text-blue-600">{stats.total}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Admins</p>
+          <p className="text-lg font-bold text-purple-600">{stats.admins}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Encoders</p>
+          <p className="text-lg font-bold text-blue-600">{stats.encoders}</p>
+        </CardContent></Card>
+        <Card className="border"><CardContent className="p-2">
+          <p className="text-[10px] text-muted-foreground">Employees</p>
+          <p className="text-lg font-bold text-green-600">{stats.employees}</p>
+        </CardContent></Card>
       </div>
 
       {/* Users Table */}
-      <Card className="border-2">
-        <CardHeader>
-          <CardTitle>All Users</CardTitle>
-          <CardDescription>Complete list of system users</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Name</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Email</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Role</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Department</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Joined</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Actions</th>
+      <Card className="border">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
+            <table className="w-full text-[11px]">
+              <thead className="sticky top-0 bg-white z-10">
+                <tr className="border-b bg-muted/30">
+                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Name</th>
+                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Email</th>
+                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Role</th>
+                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Department</th>
+                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Joined</th>
+                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -130,37 +96,36 @@ export default async function UsersPage() {
                   const RoleIcon = config?.icon || User;
 
                   return (
-                    <tr key={user.id} className="border-b hover:bg-gray-50 transition-colors">
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-primary to-orange-600 rounded-full flex items-center justify-center text-white font-bold">
+                    <tr key={user.id} className="border-b hover:bg-muted/20">
+                      <td className="py-1.5 px-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-gradient-to-br from-primary to-orange-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
                             {user.name?.charAt(0).toUpperCase()}
                           </div>
                           <span className="font-medium">{user.name}</span>
                         </div>
                       </td>
-                      <td className="py-4 px-4 text-sm text-gray-600">{user.email}</td>
-                      <td className="py-4 px-4">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${config?.color}`}>
-                          <RoleIcon className="w-3.5 h-3.5" />
+                      <td className="py-1.5 px-2 text-muted-foreground">{user.email}</td>
+                      <td className="py-1.5 px-2">
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${config?.color}`}>
                           {config?.label}
                         </span>
                       </td>
-                      <td className="py-4 px-4">
+                      <td className="py-1.5 px-2">
                         {user.department?.name ? (
-                          <span className="text-sm bg-gray-100 px-2.5 py-1 rounded font-medium">
+                          <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] font-medium">
                             {user.department.name}
                           </span>
                         ) : (
-                          <span className="text-sm text-gray-400">Not assigned</span>
+                          <span className="text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="py-4 px-4 text-sm text-gray-600">
+                      <td className="py-1.5 px-2 text-muted-foreground">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm">
+                      <td className="py-1.5 px-2">
+                        <div className="flex items-center gap-1">
+                          <Button variant="outline" size="sm" className="h-5 text-[10px] px-2">
                             Edit
                           </Button>
                           {user.id !== session.user.id && (
