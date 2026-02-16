@@ -35,8 +35,7 @@ export function ItemDistributionChart({ data, title }: { data: DistributionData[
               fill="#8884d8"
               paddingAngle={3}
               dataKey="value"
-              label={(entry) => entry.value > 0 ? entry.value : ''}
-              labelStyle={{ fontSize: 10 }}
+              label={({ value }) => value > 0 ? value : ''}
             >
               {data.map((entry, index) => (
                 <Cell 
