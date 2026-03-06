@@ -33,17 +33,15 @@ enum ItemType {
 }
 
 enum RawMaterialStatus {
-  AVAILABLE
-  DONE
-  PROCESSING
-  SHORT
+  APPROVAL
+  RELEASE_TO_PRODUCTION
+  NOT_AVAILABLE
 }
 
 enum ItemStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
-  DELAYED
 }
 
 enum ProcessStatus {
@@ -115,7 +113,7 @@ model Item {
   currentOutput Int               @default(0)
   deadline      DateTime
   status        ItemStatus        @default(PENDING)
-  rawMaterials  RawMaterialStatus @default(SHORT)
+  rawMaterials  RawMaterialStatus @default(NOT_AVAILABLE)
   
   departmentId String
   department   Department @relation(fields: [departmentId], references: [id])
@@ -152,6 +150,7 @@ model Process {
   // Relations
   updates     ProcessUpdate[]
   delayReasons DelayReason[]
+  notes        Note[]
   
   startedAt   DateTime?
   completedAt DateTime?
@@ -234,8 +233,11 @@ model Note {
   id      String @id @default(cuid())
   content String @db.Text
   
-  itemId String
-  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId String?
+  item   Item?   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  
+  processId String?
+  process   Process? @relation(fields: [processId], references: [id], onDelete: Cascade)
   
   userId String
   user   User   @relation(fields: [userId], references: [id])
@@ -244,4 +246,5 @@ model Note {
   updatedAt DateTime @updatedAt
   
   @@index([itemId, createdAt])
+  @@index([processId, createdAt])
 }

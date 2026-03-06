@@ -1,7 +1,7 @@
 ﻿import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { Package, Clock, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Package, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -36,7 +36,6 @@ const statusConfig = {
   PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-800", icon: Clock },
   IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-800", icon: AlertCircle },
   COMPLETED: { label: "Completed", color: "bg-green-100 text-green-800", icon: CheckCircle2 },
-  DELAYED: { label: "Delayed", color: "bg-red-100 text-red-800", icon: XCircle },
 };
 
 export default async function MyItemsPage() {

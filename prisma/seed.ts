@@ -163,7 +163,7 @@ async function main() {
       currentOutput: 243,
       deadline: new Date('2026-01-15'),
       status: ItemStatus.IN_PROGRESS,
-      rawMaterials: RawMaterialStatus.AVAILABLE,
+      rawMaterials: RawMaterialStatus.RELEASE_TO_PRODUCTION,
       departmentId: cardboard.id,
     },
   });
@@ -182,7 +182,7 @@ async function main() {
       currentOutput: 1200,
       deadline: new Date('2026-02-10'),
       status: ItemStatus.IN_PROGRESS,
-      rawMaterials: RawMaterialStatus.PROCESSING,
+      rawMaterials: RawMaterialStatus.APPROVAL,
       departmentId: label.id,
     },
   });
@@ -201,7 +201,7 @@ async function main() {
       currentOutput: 0,
       deadline: new Date('2026-02-20'),
       status: ItemStatus.PENDING,
-      rawMaterials: RawMaterialStatus.SHORT,
+      rawMaterials: RawMaterialStatus.NOT_AVAILABLE,
       departmentId: manual.id,
     },
   });

@@ -32,7 +32,6 @@ const navigation = [
   // Encoder navigation
   { name: "Dashboard", href: "/dashboard/encoder", icon: LayoutDashboard, roles: ["ENCODER"] },
   { name: "Items", href: "/dashboard/items", icon: Package, roles: ["ENCODER"] },
-  { name: "Assignments", href: "/dashboard/assignments", icon: Users, roles: ["ENCODER"] },
   
   // Employee / Line Leader navigation
   { name: "Dashboard", href: "/dashboard/employee", icon: LayoutDashboard, roles: ["EMPLOYEE"] },

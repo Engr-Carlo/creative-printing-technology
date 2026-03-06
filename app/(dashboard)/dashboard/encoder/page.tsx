@@ -7,7 +7,6 @@ import {
   Clock,
   CheckCircle2,
   PlusCircle,
-  Users,
   Calendar,
 } from "lucide-react";
 import prisma from "@/lib/prisma";
@@ -15,14 +14,15 @@ import Link from "next/link";
 import { RawMaterialsSelect } from "@/components/RawMaterialsSelect";
 import { ProductionTrendChart } from "@/components/charts/ProductionTrendChart";
 import { ItemDistributionChart } from "@/components/charts/ItemDistributionChart";
+import ItemNoteCell from "@/components/ItemNoteCell";
 
-// Department category config matching the sidebar from the screenshot
+// Department category config - only MANUAL is active, others are placeholders
 const DEPARTMENT_CATEGORIES = [
-  { type: "CARDBOARD", label: "Card Board", color: "bg-orange-500" },
-  { type: "MANUAL", label: "Manuals", color: "bg-orange-500" },
-  { type: "LABEL", label: "Labels / Sticker", color: "bg-orange-500" },
-  { type: "BOOKBIND", label: "Bookbind", color: "bg-orange-500" },
-  { type: "OTHER_ITEMS", label: "Other Items", color: "bg-orange-500" },
+  { type: "MANUAL", label: "Manuals", color: "bg-orange-500", active: true },
+  { type: "CARDBOARD", label: "Card Board", color: "bg-gray-400", active: false },
+  { type: "LABEL", label: "Labels / Sticker", color: "bg-gray-400", active: false },
+  { type: "BOOKBIND", label: "Bookbind", color: "bg-gray-400", active: false },
+  { type: "OTHER_ITEMS", label: "Other Items", color: "bg-gray-400", active: false },
 ];
 
 const TYPE_LABELS: Record<string, string> = {
@@ -35,7 +35,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-800 border-yellow-300" },
   IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-800 border-blue-300" },
   COMPLETED: { label: "Completed", color: "bg-green-100 text-green-800 border-green-300" },
-  DELAYED: { label: "Delayed", color: "bg-red-100 text-red-800 border-red-300" },
 };
 
 async function getEncoderStats() {
@@ -75,6 +74,16 @@ async function getItemsByDepartment(departmentType: string) {
         select: {
           user: { select: { name: true } },
         },
+      },
+      notes: {
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          user: { select: { name: true } },
+        },
+        orderBy: { createdAt: "desc" as const },
+        take: 20,
       },
     },
     orderBy: { createdAt: "desc" },
@@ -127,7 +136,7 @@ export default async function EncoderDashboardPage({
   }
 
   const { category } = await searchParams;
-  const activeCategory = category || "CARDBOARD";
+  const activeCategory = category || "MANUAL";
   
   const [stats, activeItems, chartData] = await Promise.all([
     getEncoderStats(),
@@ -243,6 +252,17 @@ export default async function EncoderDashboardPage({
             <CardContent className="p-1.5 space-y-0.5">
               {DEPARTMENT_CATEGORIES.map((cat) => {
                 const isActive = activeCategory === cat.type;
+                if (!cat.active) {
+                  return (
+                    <div
+                      key={cat.type}
+                      className="flex items-center justify-between px-2.5 py-1.5 rounded text-xs font-semibold text-gray-400 cursor-not-allowed"
+                    >
+                      <span>{cat.label}</span>
+                      <span className="text-[9px] text-gray-300">Soon</span>
+                    </div>
+                  );
+                }
                 return (
                   <Link
                     key={cat.type}
@@ -260,33 +280,6 @@ export default async function EncoderDashboardPage({
                   </Link>
                 );
               })}
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions - Compact */}
-          <Card className="border-2">
-            <CardHeader className="py-2 px-3">
-              <CardTitle className="text-xs font-bold text-gray-700">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="p-1.5 space-y-0.5">
-              <Link href="/dashboard/items/new">
-                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded text-xs font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-all">
-                  <PlusCircle className="w-3 h-3" />
-                  New Item
-                </div>
-              </Link>
-              <Link href="/dashboard/assignments">
-                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded text-xs font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-all">
-                  <Users className="w-3 h-3" />
-                  Assignments
-                </div>
-              </Link>
-              <Link href="/dashboard/items">
-                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded text-xs font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-all">
-                  <Package className="w-3 h-3" />
-                  All Items
-                </div>
-              </Link>
             </CardContent>
           </Card>
         </div>
@@ -336,6 +329,9 @@ export default async function EncoderDashboardPage({
                         Status
                       </th>
                       <th className="text-center py-1.5 px-2 font-semibold text-orange-900 whitespace-nowrap">
+                        Notes
+                      </th>
+                      <th className="text-center py-1.5 px-2 font-semibold text-orange-900 whitespace-nowrap">
                         Actions
                       </th>
                     </tr>
@@ -343,7 +339,7 @@ export default async function EncoderDashboardPage({
                   <tbody>
                     {activeItems.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="text-center py-8 text-muted-foreground">
+                        <td colSpan={10} className="text-center py-8 text-muted-foreground">
                           <Package className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                           <p className="text-xs font-semibold text-gray-500">
                             No items in {activeCategoryConfig?.label}
@@ -403,6 +399,9 @@ export default async function EncoderDashboardPage({
                               >
                                 {statusConfig.label}
                               </span>
+                            </td>
+                            <td className="py-1.5 px-2 text-center">
+                              <ItemNoteCell itemId={item.id} notes={item.notes || []} />
                             </td>
                             <td className="py-1.5 px-2 text-center">
                               <Link href={`/dashboard/items/${item.id}`}>

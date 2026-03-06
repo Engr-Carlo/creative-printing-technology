@@ -7,6 +7,9 @@ import Link from "next/link";
 import { ProcessStatusButton } from "@/components/ProcessStatusButton";
 import { ProductionTrendChart } from "@/components/charts/ProductionTrendChart";
 import { ItemDistributionChart } from "@/components/charts/ItemDistributionChart";
+import ItemNoteCell from "@/components/ItemNoteCell";
+import ProcessNoteCell from "@/components/ProcessNoteCell";
+import NoteSection from "@/components/NoteSection";
 
 async function getLineLeaderData(userId: string, selectedItemId?: string) {
   // Get user with department
@@ -48,8 +51,28 @@ async function getLineLeaderData(userId: string, selectedItemId?: string) {
           status: true,
           machine: { select: { name: true } },
           assignedTo: { select: { name: true } },
+          notes: {
+            select: {
+              id: true,
+              content: true,
+              createdAt: true,
+              user: { select: { name: true } },
+            },
+            orderBy: { createdAt: "desc" as const },
+            take: 10,
+          },
         },
         orderBy: { order: "asc" },
+      },
+      notes: {
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          user: { select: { name: true } },
+        },
+        orderBy: { createdAt: "desc" as const },
+        take: 20,
       },
     },
     orderBy: { createdAt: "desc" },
@@ -78,7 +101,6 @@ async function getLineLeaderData(userId: string, selectedItemId?: string) {
     { name: "Completed", value: items.filter((i) => i.status === "COMPLETED").length },
     { name: "In Progress", value: items.filter((i) => i.status === "IN_PROGRESS").length },
     { name: "Pending", value: items.filter((i) => i.status === "PENDING").length },
-    { name: "Delayed", value: items.filter((i) => i.status === "DELAYED").length },
   ].filter((d) => d.value > 0);
 
   // Trend data (simple: by item creation, get last 7 days)
@@ -218,7 +240,7 @@ export default async function EmployeeDashboardPage(props: {
                 <span className={`w-1.5 h-1.5 rounded-full ${
                   item.status === "COMPLETED" ? "bg-green-500" :
                   item.status === "IN_PROGRESS" ? "bg-blue-500" :
-                  item.status === "DELAYED" ? "bg-red-500" : "bg-yellow-500"
+                  "bg-yellow-500"
                 }`} />
                 <span className="text-[10px] text-gray-500">{item.status.replace("_", " ")}</span>
               </div>
@@ -247,15 +269,13 @@ export default async function EmployeeDashboardPage(props: {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    selectedItem.rawMaterials === "AVAILABLE" ? "bg-green-100 text-green-700" :
-                    selectedItem.rawMaterials === "DONE" ? "bg-blue-100 text-blue-700" :
-                    selectedItem.rawMaterials === "PROCESSING" ? "bg-orange-100 text-orange-700" :
+                    selectedItem.rawMaterials === "RELEASE_TO_PRODUCTION" ? "bg-green-100 text-green-700" :
+                    selectedItem.rawMaterials === "APPROVAL" ? "bg-yellow-100 text-yellow-700" :
                     "bg-red-100 text-red-700"
-                  }`}>Raw: {selectedItem.rawMaterials}</span>
+                  }`}>Raw: {selectedItem.rawMaterials.replace(/_/g, " ")}</span>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                     selectedItem.status === "COMPLETED" ? "bg-green-100 text-green-700" :
                     selectedItem.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
-                    selectedItem.status === "DELAYED" ? "bg-red-100 text-red-700" :
                     "bg-yellow-100 text-yellow-700"
                   }`}>{selectedItem.status.replace("_", " ")}</span>
                 </div>
@@ -279,12 +299,13 @@ export default async function EmployeeDashboardPage(props: {
                           <div className="flex items-center gap-1"><Users className="w-3 h-3" />EMPLOYEES</div>
                         </th>
                         <th className="text-left py-1.5 px-3 font-bold text-muted-foreground">ACTION</th>
+                        <th className="text-left py-1.5 px-3 font-bold text-muted-foreground">NOTES</th>
                       </tr>
                     </thead>
                     <tbody>
                       {selectedItem.processes.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="text-center py-6 text-muted-foreground text-xs">
+                          <td colSpan={7} className="text-center py-6 text-muted-foreground text-xs">
                             No processes defined for this item
                           </td>
                         </tr>
@@ -314,6 +335,9 @@ export default async function EmployeeDashboardPage(props: {
                                 currentStatus={proc.status}
                                 processName={proc.name}
                               />
+                            </td>
+                            <td className="py-1.5 px-3">
+                              <ProcessNoteCell processId={proc.id} notes={(proc as any).notes || []} />
                             </td>
                           </tr>
                         ))
@@ -349,6 +373,18 @@ export default async function EmployeeDashboardPage(props: {
                   </p>
                 </div>
               </div>
+
+              {/* Item Notes */}
+              <Card className="border">
+                <CardContent className="p-3">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">Item Notes</p>
+                  <NoteSection
+                    type="item"
+                    targetId={selectedItem.id}
+                    notes={(selectedItem as any).notes || []}
+                  />
+                </CardContent>
+              </Card>
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">

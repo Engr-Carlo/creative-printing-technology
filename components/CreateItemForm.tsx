@@ -23,10 +23,9 @@ const ITEM_TYPES = [
 ];
 
 const RAW_MATERIAL_STATUSES = [
-  { value: "AVAILABLE", label: "Available" },
-  { value: "DONE", label: "Done" },
-  { value: "PROCESSING", label: "Processing" },
-  { value: "SHORT", label: "Short" },
+  { value: "APPROVAL", label: "Approval" },
+  { value: "RELEASE_TO_PRODUCTION", label: "Release to Production" },
+  { value: "NOT_AVAILABLE", label: "Not Available" },
 ];
 
 export function CreateItemForm({ departments }: { departments: Department[] }) {

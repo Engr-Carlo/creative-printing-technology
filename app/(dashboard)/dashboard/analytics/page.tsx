@@ -240,7 +240,6 @@ export default async function AnalyticsPage() {
                   PENDING: { label: "Pending", color: "from-yellow-500 to-yellow-600" },
                   IN_PROGRESS: { label: "In Progress", color: "from-blue-500 to-blue-600" },
                   COMPLETED: { label: "Completed", color: "from-green-500 to-green-600" },
-                  DELAYED: { label: "Delayed", color: "from-red-500 to-red-600" },
                 };
                 const config = statusConfig[status.status] || { label: status.status, color: "from-gray-500 to-gray-600" };
                 return (
@@ -278,7 +277,6 @@ export default async function AnalyticsPage() {
                   <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                     item.status === "COMPLETED" ? "bg-green-100 text-green-700" :
                     item.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
-                    item.status === "DELAYED" ? "bg-red-100 text-red-700" :
                     "bg-yellow-100 text-yellow-700"
                   }`}>{item.status.replace("_", " ")}</span>
                   <span className="text-muted-foreground text-[10px]">{new Date(item.updatedAt).toLocaleDateString()}</span>

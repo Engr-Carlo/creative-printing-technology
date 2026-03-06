@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Package, Clock, CheckCircle2 } from "lucide-react";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 
@@ -28,7 +28,6 @@ async function getDashboardData() {
     totalItems: items.length,
     inProgressItems: items.filter((i) => i.status === "IN_PROGRESS").length,
     completedItems: items.filter((i) => i.status === "COMPLETED").length,
-    delayedItems: items.filter((i) => i.deadline && i.deadline < now && i.status !== "COMPLETED").length,
   };
 
   return { stats, recentItems: items.slice(0, 5) };
@@ -50,7 +49,6 @@ export default async function DashboardPage() {
     { title: "Total Items", value: stats.totalItems, icon: Package, color: "text-blue-600", bg: "bg-blue-600" },
     { title: "In Progress", value: stats.inProgressItems, icon: Clock, color: "text-orange-600", bg: "bg-primary" },
     { title: "Completed", value: stats.completedItems, icon: CheckCircle2, color: "text-green-600", bg: "bg-green-600" },
-    { title: "Delayed", value: stats.delayedItems, icon: AlertTriangle, color: "text-red-600", bg: "bg-red-500" },
   ];
 
   return (
@@ -109,7 +107,6 @@ export default async function DashboardPage() {
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                         item.status === "COMPLETED" ? "bg-green-100 text-green-700" :
                         item.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
-                        item.status === "DELAYED" ? "bg-red-100 text-red-700" :
                         "bg-yellow-100 text-yellow-700"
                       }`}>{item.status.replace("_", " ")}</span>
                     </td>
