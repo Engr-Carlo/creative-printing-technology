@@ -215,15 +215,16 @@ async function main() {
     where: { departmentId: cardboard.id, name: 'M1' },
   });
 
-  const processes = [
-    { name: 'P1', order: 1, status: ProcessStatus.COMPLETED, machineId: machine1?.id },
-    { name: 'P2', order: 2, status: ProcessStatus.DELAYED, machineId: machine1?.id },
-    { name: 'P3', order: 3, status: ProcessStatus.COMPLETED, machineId: machine2?.id },
-    { name: 'P4', order: 4, status: ProcessStatus.DELAYED, machineId: machine2?.id },
-    { name: 'P5', order: 5, status: ProcessStatus.DELAYED, machineId: machine2?.id },
+  // Item1 is FOLDED: Printing, Pre Fold, Trimming, Folding, Inspection
+  const foldedProcesses = [
+    { name: 'Printing', order: 1, status: ProcessStatus.COMPLETED, machineId: machine1?.id },
+    { name: 'Pre Fold', order: 2, status: ProcessStatus.DELAYED, machineId: machine1?.id },
+    { name: 'Trimming', order: 3, status: ProcessStatus.COMPLETED, machineId: machine2?.id },
+    { name: 'Folding', order: 4, status: ProcessStatus.DELAYED, machineId: machine2?.id },
+    { name: 'Inspection', order: 5, status: ProcessStatus.DELAYED, machineId: null },
   ];
 
-  for (const proc of processes) {
+  for (const proc of foldedProcesses) {
     await prisma.process.create({
       data: {
         ...proc,
@@ -233,15 +234,39 @@ async function main() {
     });
   }
 
-  // Create Processes for Item 2
-  for (let i = 1; i <= 4; i++) {
+  // Item2 is SHEETED: Printing, Pre Fold, Trimming, Inspection
+  const sheetedProcesses = [
+    { name: 'Printing', order: 1, status: ProcessStatus.COMPLETED },
+    { name: 'Pre Fold', order: 2, status: ProcessStatus.COMPLETED },
+    { name: 'Trimming', order: 3, status: ProcessStatus.IN_PROGRESS },
+    { name: 'Inspection', order: 4, status: ProcessStatus.IN_PROGRESS },
+  ];
+
+  for (const proc of sheetedProcesses) {
     await prisma.process.create({
       data: {
-        name: `P${i}`,
-        order: i,
-        status: i <= 2 ? ProcessStatus.COMPLETED : ProcessStatus.IN_PROGRESS,
+        ...proc,
         itemId: item2.id,
         assignedToId: employee2.id,
+      },
+    });
+  }
+
+  // Item3 is STITCHING: Printing, Pre Fold, Trimming, Folding, Inspection, Stitching
+  const stitchingProcesses = [
+    { name: 'Printing', order: 1, status: ProcessStatus.NOT_STARTED },
+    { name: 'Pre Fold', order: 2, status: ProcessStatus.NOT_STARTED },
+    { name: 'Trimming', order: 3, status: ProcessStatus.NOT_STARTED },
+    { name: 'Folding', order: 4, status: ProcessStatus.NOT_STARTED },
+    { name: 'Inspection', order: 5, status: ProcessStatus.NOT_STARTED },
+    { name: 'Stitching', order: 6, status: ProcessStatus.NOT_STARTED },
+  ];
+
+  for (const proc of stitchingProcesses) {
+    await prisma.process.create({
+      data: {
+        ...proc,
+        itemId: item3.id,
       },
     });
   }

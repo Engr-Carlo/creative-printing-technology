@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { PROCESS_TEMPLATES } from "@/lib/constants/processes";
 
 export async function createItem(prevState: any, formData: FormData) {
   const session = await auth();
@@ -59,8 +60,21 @@ export async function createItem(prevState: any, formData: FormData) {
       },
     });
 
+    // Auto-create processes based on item type
+    const template = PROCESS_TEMPLATES[type];
+    if (template) {
+      await prisma.process.createMany({
+        data: template.map((processName, index) => ({
+          name: processName,
+          order: index + 1,
+          itemId: item.id,
+        })),
+      });
+    }
+
     revalidatePath("/dashboard/items");
     revalidatePath("/dashboard/encoder");
+    revalidatePath("/dashboard/employee");
     return { success: true, itemId: item.id };
   } catch (error) {
     console.error("Error creating item:", error);
