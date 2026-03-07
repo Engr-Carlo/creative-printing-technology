@@ -93,7 +93,7 @@ async function main() {
     update: {},
     create: {
       email: 'admin@cpt.com',
-      name: 'Kendrick Rommel R. Alarcon',
+      name: 'Admin',
       password: hashedPassword,
       role: UserRole.ADMIN,
     },
@@ -104,10 +104,9 @@ async function main() {
     update: {},
     create: {
       email: 'lineleader@cpt.com',
-      name: 'Engr. Louie Di Ko Alam Name',
+      name: 'Line Leader',
       password: hashedPassword,
       role: UserRole.EMPLOYEE,
-      departmentId: cardboard.id,
     },
   });
 
@@ -116,34 +115,20 @@ async function main() {
     update: {},
     create: {
       email: 'encoder@cpt.com',
-      name: 'Encoder User',
+      name: 'Encoder',
       password: hashedPassword,
       role: UserRole.ENCODER,
-      departmentId: cardboard.id,
     },
   });
 
-  const employee1 = await prisma.user.upsert({
-    where: { email: 'employee1@cpt.com' },
+  const employee = await prisma.user.upsert({
+    where: { email: 'employee@cpt.com' },
     update: {},
     create: {
-      email: 'employee1@cpt.com',
-      name: 'John Dela Cruz',
+      email: 'employee@cpt.com',
+      name: 'Employee',
       password: hashedPassword,
       role: UserRole.EMPLOYEE,
-      departmentId: manual.id,
-    },
-  });
-
-  const employee2 = await prisma.user.upsert({
-    where: { email: 'employee2@cpt.com' },
-    update: {},
-    create: {
-      email: 'employee2@cpt.com',
-      name: 'Maria Santos',
-      password: hashedPassword,
-      role: UserRole.EMPLOYEE,
-      departmentId: label.id,
     },
   });
 
@@ -247,7 +232,7 @@ async function main() {
       data: {
         ...proc,
         itemId: item2.id,
-        assignedToId: employee2.id,
+        assignedToId: employee.id,
       },
     });
   }
@@ -283,7 +268,7 @@ async function main() {
   await prisma.itemAssignment.create({
     data: {
       itemId: item2.id,
-      userId: employee2.id,
+      userId: employee.id,
     },
   });
 
@@ -301,7 +286,7 @@ async function main() {
     data: {
       content: 'Material quality check passed. Proceeding to next process.',
       itemId: item2.id,
-      userId: employee2.id,
+      userId: employee.id,
     },
   });
 
@@ -310,8 +295,7 @@ async function main() {
   console.log('Admin: admin@cpt.com / password123');
   console.log('Line Leader: lineleader@cpt.com / password123');
   console.log('Encoder: encoder@cpt.com / password123');
-  console.log('Employee: employee1@cpt.com / password123');
-  console.log('Employee: employee2@cpt.com / password123');
+  console.log('Employee: employee@cpt.com / password123');
 }
 
 main()
