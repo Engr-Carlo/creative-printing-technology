@@ -25,7 +25,7 @@ export default async function DashboardLayout({
         <DashboardHeader user={session.user} />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4">
           {children}
         </main>
       </div>

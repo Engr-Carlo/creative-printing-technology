@@ -29,7 +29,7 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
       data: {
         status: newStatus as any,
         startedAt: newStatus === "IN_PROGRESS" && !process.startedAt ? new Date() : process.startedAt,
-        completedAt: newStatus === "COMPLETED" ? new Date() : null,
+        completedAt: (newStatus === "COMPLETED" || newStatus === "REJECTED") ? new Date() : null,
       },
     });
 

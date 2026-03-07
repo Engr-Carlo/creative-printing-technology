@@ -35,10 +35,11 @@ const statusConfig = {
 };
 
 const processStatusConfig = {
-  NOT_STARTED: { label: "Not Started", color: "bg-gray-100 text-gray-800 border-gray-300", icon: Clock },
+  NOT_STARTED: { label: "Not Started", color: "bg-gray-100 text-gray-700 border-gray-300", icon: Clock },
   IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-800 border-blue-300", icon: AlertCircle },
   COMPLETED: { label: "Completed", color: "bg-green-100 text-green-800 border-green-300", icon: CheckCircle2 },
-  DELAYED: { label: "Delayed", color: "bg-red-100 text-red-800 border-red-300", icon: XCircle },
+  DELAYED: { label: "Delayed", color: "bg-orange-100 text-orange-800 border-orange-300", icon: AlertCircle },
+  REJECTED: { label: "Rejected", color: "bg-red-100 text-red-800 border-red-300", icon: XCircle },
 };
 
 export default async function ItemDetailPage({ 
@@ -232,45 +233,54 @@ export default async function ItemDetailPage({
             <div className="text-center py-12 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-400" />
               <p className="font-medium">No processes defined yet</p>
-              <p className="text-sm mt-1">Add processes to track production workflow</p>
+              <p className="text-sm mt-1">Processes are auto-created when an item is created</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {item.processes.map((process) => {
-                const pConfig = processStatusConfig[process.status as keyof typeof processStatusConfig];
-                const PStatusIcon = pConfig?.icon || Clock;
-
-                return (
-                  <div
-                    key={process.id}
-                    className="flex items-center gap-4 p-4 rounded-lg border-2 hover:border-primary/30 transition-colors"
-                  >
-                    <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-700 font-bold text-lg">
-                      {process.order}
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-lg">{process.name}</h4>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                        {process.machine && (
-                          <span>Machine: {process.machine.name}</span>
-                        )}
-                        {process.assignedTo && (
-                          <span className="flex items-center gap-1">
-                            <User className="w-3 h-3" />
-                            {process.assignedTo.name}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">#</th>
+                    <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">Process</th>
+                    <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">Machine</th>
+                    <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">Assigned To</th>
+                    <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {item.processes.map((process) => {
+                    const pConfig = processStatusConfig[process.status as keyof typeof processStatusConfig];
+                    const PStatusIcon = pConfig?.icon || Clock;
+                    return (
+                      <tr key={process.id} className={`border-b transition-colors ${
+                        process.status === 'IN_PROGRESS' ? 'bg-blue-50' :
+                        process.status === 'COMPLETED' ? 'bg-green-50/40' :
+                        process.status === 'REJECTED' ? 'bg-red-50/40' :
+                        process.status === 'DELAYED' ? 'bg-orange-50/40' :
+                        'hover:bg-gray-50'
+                      }`}>
+                        <td className="py-2.5 px-3">
+                          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                            process.status === 'IN_PROGRESS' ? 'bg-blue-200 text-blue-800' :
+                            process.status === 'COMPLETED' ? 'bg-green-200 text-green-800' :
+                            process.status === 'REJECTED' ? 'bg-red-200 text-red-800' :
+                            'bg-gray-200 text-gray-700'
+                          }`}>{process.order}</span>
+                        </td>
+                        <td className="py-2.5 px-3 font-semibold text-gray-900">{process.name}</td>
+                        <td className="py-2.5 px-3 text-gray-600">{process.machine?.name || <span className="text-gray-300">—</span>}</td>
+                        <td className="py-2.5 px-3 text-gray-600">{process.assignedTo?.name || <span className="text-gray-300">—</span>}</td>
+                        <td className="py-2.5 px-3">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${pConfig?.color}`}>
+                            <PStatusIcon className="w-3 h-3" />
+                            {pConfig?.label}
                           </span>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${pConfig?.color}`}>
-                        <PStatusIcon className="w-3.5 h-3.5" />
-                        {pConfig?.label}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { updateProcessStatus } from "@/app/actions/processes";
 import { useRouter } from "next/navigation";
-import { PlayCircle, CheckCircle2, Clock } from "lucide-react";
+import { PlayCircle, CheckCircle2, Clock, XCircle } from "lucide-react";
 
 interface ProcessStatusButtonProps {
   processId: string;
@@ -52,20 +52,20 @@ export function ProcessStatusButton({ processId, currentStatus, processName }: P
 
   if (currentStatus === "IN_PROGRESS") {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Button
           size="sm"
           variant="outline"
-          className="text-xs"
+          className="text-xs border-green-300 text-green-700 hover:bg-green-50"
           onClick={() => handleStatusChange("COMPLETED")}
           disabled={isLoading}
         >
           {isLoading ? (
-            <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2" />
+            <div className="w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin mr-2" />
           ) : (
             <CheckCircle2 className="w-3 h-3 mr-1" />
           )}
-          Mark Complete
+          Complete
         </Button>
         <Button
           size="sm"
@@ -75,7 +75,17 @@ export function ProcessStatusButton({ processId, currentStatus, processName }: P
           disabled={isLoading}
         >
           <Clock className="w-3 h-3 mr-1" />
-          Report Delay
+          Delay
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-xs border-red-300 text-red-700 hover:bg-red-50"
+          onClick={() => handleStatusChange("REJECTED")}
+          disabled={isLoading}
+        >
+          <XCircle className="w-3 h-3 mr-1" />
+          Reject
         </Button>
       </div>
     );
@@ -95,8 +105,17 @@ export function ProcessStatusButton({ processId, currentStatus, processName }: P
         ) : (
           <PlayCircle className="w-3 h-3 mr-1" />
         )}
-        Resume Process
+        Resume
       </Button>
+    );
+  }
+
+  if (currentStatus === "REJECTED") {
+    return (
+      <span className="text-xs text-red-600 font-semibold flex items-center gap-1">
+        <XCircle className="w-3 h-3" />
+        Rejected
+      </span>
     );
   }
 

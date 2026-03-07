@@ -31,10 +31,11 @@ async function getMyProcesses(userId: string) {
 }
 
 const statusConfig = {
-  NOT_STARTED: { label: "Not Started", color: "bg-yellow-100 text-yellow-800", icon: Clock },
+  NOT_STARTED: { label: "Not Started", color: "bg-gray-100 text-gray-700", icon: Clock },
   IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-800", icon: PlayCircle },
   COMPLETED: { label: "Completed", color: "bg-green-100 text-green-800", icon: CheckCircle2 },
-  DELAYED: { label: "Delayed", color: "bg-red-100 text-red-800", icon: XCircle },
+  DELAYED: { label: "Delayed", color: "bg-orange-100 text-orange-800", icon: AlertCircle },
+  REJECTED: { label: "Rejected", color: "bg-red-100 text-red-800", icon: XCircle },
 };
 
 export default async function MyProcessesPage() {

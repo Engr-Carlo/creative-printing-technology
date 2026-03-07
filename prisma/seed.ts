@@ -61,16 +61,22 @@ async function main() {
   // Create Machines
   console.log('Creating machines...');
   const machines = [
-    { name: 'TW102', type: 'Printing Press', departmentId: cardboard.id },
-    { name: 'M1', type: 'Cutting Machine', departmentId: cardboard.id },
-    { name: 'M2', type: 'Folding Machine', departmentId: cardboard.id },
-    { name: 'M3', type: 'Gluing Machine', departmentId: cardboard.id },
-    { name: 'M1', type: 'Stitching Machine', departmentId: manual.id },
-    { name: 'M2', type: 'Manual Press', departmentId: manual.id },
-    { name: 'M1', type: 'Label Printer', departmentId: label.id },
-    { name: 'M2', type: 'Label Cutter', departmentId: label.id },
-    { name: 'M1', type: 'Binding Machine', departmentId: bookbind.id },
-    { name: 'M2', type: 'Perfect Binder', departmentId: bookbind.id },
+    // Printing presses (6 machines for all item types)
+    { name: 'R1', type: 'Printing Press', departmentId: manual.id },
+    { name: 'R2', type: 'Printing Press', departmentId: manual.id },
+    { name: 'R3', type: 'Printing Press', departmentId: manual.id },
+    { name: 'R4', type: 'Printing Press', departmentId: manual.id },
+    { name: 'R5', type: 'Printing Press', departmentId: manual.id },
+    { name: 'R6', type: 'Printing Press', departmentId: manual.id },
+    // Trimming
+    { name: 'Polar Cutter', type: 'Cutting Machine', departmentId: manual.id },
+    // Folding machines
+    { name: 'MB01', type: 'Folding Machine', departmentId: manual.id },
+    { name: 'MB02', type: 'Folding Machine', departmentId: manual.id },
+    { name: 'MB03', type: 'Folding Machine', departmentId: manual.id },
+    { name: 'MB04', type: 'Folding Machine', departmentId: manual.id },
+    // Stitching
+    { name: 'Muller Martini', type: 'Stitching Machine', departmentId: manual.id },
   ];
 
   for (const machine of machines) {
@@ -149,7 +155,7 @@ async function main() {
       deadline: new Date('2026-01-15'),
       status: ItemStatus.IN_PROGRESS,
       rawMaterials: RawMaterialStatus.RELEASE_TO_PRODUCTION,
-      departmentId: cardboard.id,
+      departmentId: manual.id,
     },
   });
 
@@ -168,7 +174,7 @@ async function main() {
       deadline: new Date('2026-02-10'),
       status: ItemStatus.IN_PROGRESS,
       rawMaterials: RawMaterialStatus.APPROVAL,
-      departmentId: label.id,
+      departmentId: manual.id,
     },
   });
 
@@ -193,20 +199,35 @@ async function main() {
 
   // Create Processes for Item 1
   console.log('Creating processes...');
-  const machine1 = await prisma.machine.findFirst({
-    where: { departmentId: cardboard.id, name: 'TW102' },
+  const machineR1 = await prisma.machine.findFirst({
+    where: { departmentId: manual.id, name: 'R1' },
   });
-  const machine2 = await prisma.machine.findFirst({
-    where: { departmentId: cardboard.id, name: 'M1' },
+  const machineR2 = await prisma.machine.findFirst({
+    where: { departmentId: manual.id, name: 'R2' },
+  });
+  const machineR3 = await prisma.machine.findFirst({
+    where: { departmentId: manual.id, name: 'R3' },
+  });
+  const machinePolarCutter = await prisma.machine.findFirst({
+    where: { departmentId: manual.id, name: 'Polar Cutter' },
+  });
+  const machineMB01 = await prisma.machine.findFirst({
+    where: { departmentId: manual.id, name: 'MB01' },
+  });
+  const machineMB02 = await prisma.machine.findFirst({
+    where: { departmentId: manual.id, name: 'MB02' },
+  });
+  const machineMullerMartini = await prisma.machine.findFirst({
+    where: { departmentId: manual.id, name: 'Muller Martini' },
   });
 
-  // Item1 is FOLDED: Printing, Pre Fold, Trimming, Folding, Inspection
+  // Item1 is FOLDED: Printing → Pre-Fold/Inspection → Trimming → Folding → Inspection
   const foldedProcesses = [
-    { name: 'Printing', order: 1, status: ProcessStatus.COMPLETED, machineId: machine1?.id },
-    { name: 'Pre Fold', order: 2, status: ProcessStatus.DELAYED, machineId: machine1?.id },
-    { name: 'Trimming', order: 3, status: ProcessStatus.COMPLETED, machineId: machine2?.id },
-    { name: 'Folding', order: 4, status: ProcessStatus.DELAYED, machineId: machine2?.id },
-    { name: 'Inspection', order: 5, status: ProcessStatus.DELAYED, machineId: null },
+    { name: 'Printing', order: 1, status: ProcessStatus.COMPLETED, machineId: machineR1?.id },
+    { name: 'Pre-Fold/Inspection', order: 2, status: ProcessStatus.DELAYED, machineId: undefined },
+    { name: 'Trimming', order: 3, status: ProcessStatus.COMPLETED, machineId: machinePolarCutter?.id },
+    { name: 'Folding', order: 4, status: ProcessStatus.DELAYED, machineId: machineMB01?.id },
+    { name: 'Inspection', order: 5, status: ProcessStatus.DELAYED, machineId: undefined },
   ];
 
   for (const proc of foldedProcesses) {
@@ -219,12 +240,12 @@ async function main() {
     });
   }
 
-  // Item2 is SHEETED: Printing, Pre Fold, Trimming, Inspection
+  // Item2 is SHEETED: Printing → Pre-Fold/Inspection → Trimming → Inspection
   const sheetedProcesses = [
-    { name: 'Printing', order: 1, status: ProcessStatus.COMPLETED },
-    { name: 'Pre Fold', order: 2, status: ProcessStatus.COMPLETED },
-    { name: 'Trimming', order: 3, status: ProcessStatus.IN_PROGRESS },
-    { name: 'Inspection', order: 4, status: ProcessStatus.IN_PROGRESS },
+    { name: 'Printing', order: 1, status: ProcessStatus.COMPLETED, machineId: machineR2?.id },
+    { name: 'Pre-Fold/Inspection', order: 2, status: ProcessStatus.COMPLETED, machineId: undefined },
+    { name: 'Trimming', order: 3, status: ProcessStatus.IN_PROGRESS, machineId: machinePolarCutter?.id },
+    { name: 'Inspection', order: 4, status: ProcessStatus.IN_PROGRESS, machineId: undefined },
   ];
 
   for (const proc of sheetedProcesses) {
@@ -237,14 +258,14 @@ async function main() {
     });
   }
 
-  // Item3 is STITCHING: Printing, Pre Fold, Trimming, Folding, Inspection, Stitching
+  // Item3 is STITCHING: Printing → Pre-Fold/Inspection → Trimming → Folding → Stitching → Inspection
   const stitchingProcesses = [
-    { name: 'Printing', order: 1, status: ProcessStatus.NOT_STARTED },
-    { name: 'Pre Fold', order: 2, status: ProcessStatus.NOT_STARTED },
-    { name: 'Trimming', order: 3, status: ProcessStatus.NOT_STARTED },
-    { name: 'Folding', order: 4, status: ProcessStatus.NOT_STARTED },
-    { name: 'Inspection', order: 5, status: ProcessStatus.NOT_STARTED },
-    { name: 'Stitching', order: 6, status: ProcessStatus.NOT_STARTED },
+    { name: 'Printing', order: 1, status: ProcessStatus.NOT_STARTED, machineId: machineR3?.id },
+    { name: 'Pre-Fold/Inspection', order: 2, status: ProcessStatus.NOT_STARTED, machineId: undefined },
+    { name: 'Trimming', order: 3, status: ProcessStatus.NOT_STARTED, machineId: machinePolarCutter?.id },
+    { name: 'Folding', order: 4, status: ProcessStatus.NOT_STARTED, machineId: machineMB02?.id },
+    { name: 'Stitching', order: 5, status: ProcessStatus.NOT_STARTED, machineId: machineMullerMartini?.id },
+    { name: 'Inspection', order: 6, status: ProcessStatus.NOT_STARTED, machineId: undefined },
   ];
 
   for (const proc of stitchingProcesses) {

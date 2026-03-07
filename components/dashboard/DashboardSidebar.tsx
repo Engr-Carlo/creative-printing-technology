@@ -53,14 +53,14 @@ export default function DashboardSidebar({ user }: DashboardSidebarProps) {
   return (
     <div className="w-64 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white flex flex-col shadow-2xl">
       {/* Logo */}
-      <div className="p-6 border-b border-white/10">
+      <div className="p-5 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
+          <div className="w-10 h-10 bg-gradient-to-br from-primary to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary/30 flex-shrink-0">
             <Building2 className="w-6 h-6 text-white" />
           </div>
-          <div>
-            <h2 className="font-bold text-lg">CPT</h2>
-            <p className="text-xs text-gray-400">Production System</p>
+          <div className="min-w-0">
+            <h2 className="font-bold text-sm leading-tight">Creative Printing</h2>
+            <p className="text-[10px] text-gray-400">Production System</p>
           </div>
         </div>
       </div>

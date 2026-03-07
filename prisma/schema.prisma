@@ -49,6 +49,7 @@ enum ProcessStatus {
   IN_PROGRESS
   COMPLETED
   DELAYED
+  REJECTED
 }
 
 enum DelayCategory {
