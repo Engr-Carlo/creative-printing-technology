@@ -6,6 +6,75 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { PROCESS_TEMPLATES } from "@/lib/constants/processes";
 
+export async function quickGenerateItem(data: {
+  type: string;
+  name: string;
+  customer: string;
+  quantity: number;
+  targetOutput: number;
+}) {
+  const session = await auth();
+  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "ENCODER")) {
+    return { error: "Unauthorized" };
+  }
+
+  if (!["FOLDED", "SHEETED", "STITCHING"].includes(data.type)) {
+    return { error: "Invalid item type" };
+  }
+
+  try {
+    const department = await prisma.department.findFirst({ where: { type: "MANUAL" } });
+    if (!department) return { error: "Manual department not found. Please set up the Manual department first." };
+
+    // Generate item number: MAN-YYYYMMDD-NNN
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
+    const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay   = new Date(now); endOfDay.setHours(23, 59, 59, 999);
+    const todayCount = await prisma.item.count({ where: { createdAt: { gte: startOfDay, lte: endOfDay } } });
+    const seq = String(todayCount + 1).padStart(3, "0");
+    const itemNumber = `MAN-${dateStr}-${seq}`;
+
+    const deadline = new Date(); deadline.setDate(deadline.getDate() + 7);
+
+    const item = await prisma.item.create({
+      data: {
+        itemNumber,
+        name: data.name || `${data.type} Job`,
+        type: data.type as any,
+        quantity: data.quantity || 1,
+        customer: data.customer || "TBD",
+        departmentId: department.id,
+        targetOutput: data.targetOutput || 0,
+        deadline,
+        color: null,
+        rawMaterials: "NOT_AVAILABLE",
+        status: "PENDING",
+        currentOutput: 0,
+      },
+    });
+
+    const template = PROCESS_TEMPLATES[data.type];
+    if (template) {
+      await prisma.process.createMany({
+        data: template.map((processName, index) => ({
+          name: processName,
+          order: index + 1,
+          itemId: item.id,
+        })),
+      });
+    }
+
+    revalidatePath("/dashboard/items");
+    revalidatePath("/dashboard/encoder");
+    revalidatePath("/dashboard/employee");
+    return { success: true, itemId: item.id, itemNumber };
+  } catch (error) {
+    console.error("Error generating item:", error);
+    return { error: "Failed to generate item" };
+  }
+}
+
 export async function createItem(prevState: any, formData: FormData) {
   const session = await auth();
   if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "ENCODER")) {

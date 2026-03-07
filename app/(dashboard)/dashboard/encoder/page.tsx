@@ -15,6 +15,7 @@ import { RawMaterialsSelect } from "@/components/RawMaterialsSelect";
 import { ProductionTrendChart } from "@/components/charts/ProductionTrendChart";
 import { ItemDistributionChart } from "@/components/charts/ItemDistributionChart";
 import ItemNoteCell from "@/components/ItemNoteCell";
+import { QuickGenerateButton } from "@/components/QuickGenerateButton";
 
 // Department category config - only MANUAL is active, others are placeholders
 const DEPARTMENT_CATEGORIES = [
@@ -194,15 +195,18 @@ export default async function EncoderDashboardPage({
             <h2 className="text-xl font-bold">{session.user.name}</h2>
             <p className="text-xs opacity-80">Encoder — Production Monitoring</p>
           </div>
-          <Link href="/dashboard/items/new">
-            <Button
-              size="sm"
-              className="gap-1 bg-white text-orange-600 hover:bg-orange-50 font-semibold text-xs"
-            >
-              <PlusCircle className="w-4 h-4" />
-              Create Item
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <QuickGenerateButton />
+            <Link href="/dashboard/items/new">
+              <Button
+                size="sm"
+                className="gap-1 bg-white text-orange-600 hover:bg-orange-50 font-semibold text-xs"
+              >
+                <PlusCircle className="w-4 h-4" />
+                Create Item
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 

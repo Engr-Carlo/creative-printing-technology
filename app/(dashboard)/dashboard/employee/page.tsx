@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { Package, Clock, CheckCircle2, AlertCircle, Cog, Users, Monitor, ChevronRight } from "lucide-react";
+import { Package, Clock, CheckCircle2, AlertCircle, Cog, Users, Monitor } from "lucide-react";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { ProcessStatusButton } from "@/components/ProcessStatusButton";
@@ -283,103 +283,95 @@ export default async function EmployeeDashboardPage(props: {
                 </div>
               </div>
 
-              {/* Workflow Banner */}
-              <div className="flex items-center gap-1 flex-wrap bg-gray-50 border rounded-lg px-3 py-2">
-                <span className="text-[10px] font-bold text-gray-400 uppercase mr-1 flex-shrink-0">Workflow:</span>
-                {selectedItem.processes.map((proc, idx) => (
-                  <span key={proc.id} className="flex items-center gap-1">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                      proc.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                      proc.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700 ring-1 ring-blue-400' :
-                      proc.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                      proc.status === 'DELAYED' ? 'bg-orange-100 text-orange-700' :
-                      'bg-gray-100 text-gray-500'
-                    }`}>
-                      {proc.order}. {proc.name}
-                    </span>
-                    {idx < selectedItem.processes.length - 1 && (
-                      <ChevronRight className="w-3 h-3 text-gray-300 flex-shrink-0" />
-                    )}
-                  </span>
-                ))}
-              </div>
+              {/* Process Evaluation Panels */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <Cog className="w-3 h-3" />
+                    Process Evaluation
+                  </p>
+                  <p className="text-[10px] text-gray-500">
+                    {selectedItem.processes.filter((p) => p.status === "COMPLETED").length}/{selectedItem.processes.length} complete
+                  </p>
+                </div>
 
-              {/* Process / Machine / Employee Table */}
-              <Card className="border">
-                <CardContent className="p-0">
-                  <table className="w-full text-[11px]">
-                    <thead>
-                      <tr className="border-b bg-gray-50">
-                        <th className="text-left py-2 px-3 font-semibold text-gray-500 text-[10px] uppercase w-8">#</th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-500 text-[10px] uppercase">
-                          <div className="flex items-center gap-1"><Cog className="w-3 h-3" />Process</div>
-                        </th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-500 text-[10px] uppercase">Status</th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-500 text-[10px] uppercase">
-                          <div className="flex items-center gap-1"><Monitor className="w-3 h-3" />Machine</div>
-                        </th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-500 text-[10px] uppercase">
-                          <div className="flex items-center gap-1"><Users className="w-3 h-3" />Assigned</div>
-                        </th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-500 text-[10px] uppercase">Action</th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-500 text-[10px] uppercase">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedItem.processes.length === 0 ? (
-                        <tr>
-                          <td colSpan={7} className="text-center py-6 text-muted-foreground text-xs">
-                            No processes defined for this item
-                          </td>
-                        </tr>
-                      ) : (
-                        selectedItem.processes.map((proc) => (
-                          <tr key={proc.id} className={`border-b transition-colors ${
-                            proc.status === 'IN_PROGRESS' ? 'bg-blue-50' :
-                            proc.status === 'COMPLETED' ? 'bg-green-50/50' :
-                            proc.status === 'REJECTED' ? 'bg-red-50/50' :
-                            proc.status === 'DELAYED' ? 'bg-orange-50/50' :
-                            'hover:bg-gray-50'
-                          }`}>
-                            <td className="py-2 px-3">
-                              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold ${
-                                proc.status === 'IN_PROGRESS' ? 'bg-blue-200 text-blue-800' :
-                                proc.status === 'COMPLETED' ? 'bg-green-200 text-green-800' :
-                                proc.status === 'REJECTED' ? 'bg-red-200 text-red-800' :
-                                'bg-gray-200 text-gray-700'
-                              }`}>
-                                {proc.order}
-                              </span>
-                            </td>
-                            <td className="py-2 px-3 font-semibold text-gray-900">{proc.name}</td>
-                            <td className="py-2 px-3">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${processStatusColors[proc.status]}`}>
-                                {processStatusLabels[proc.status]}
-                              </span>
-                            </td>
-                            <td className="py-2 px-3 text-gray-600 text-[11px]">
-                              {proc.machine?.name || <span className="text-gray-300">—</span>}
-                            </td>
-                            <td className="py-2 px-3 text-gray-600 text-[11px]">
-                              {proc.assignedTo?.name || <span className="text-gray-300">—</span>}
-                            </td>
-                            <td className="py-2 px-3">
-                              <ProcessStatusButton
-                                processId={proc.id}
-                                currentStatus={proc.status}
-                                processName={proc.name}
-                              />
-                            </td>
-                            <td className="py-2 px-3">
-                              <ProcessNoteCell processId={proc.id} notes={(proc as any).notes || []} />
-                            </td>
-                          </tr>
-                        ))
+                {selectedItem.processes.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground text-xs border rounded-lg">
+                    No processes defined for this item
+                  </div>
+                ) : (
+                  selectedItem.processes.map((proc) => (
+                    <div
+                      key={proc.id}
+                      className={`rounded-lg border-2 transition-all ${
+                        proc.status === 'IN_PROGRESS' ? 'border-blue-400 bg-blue-50 shadow-md shadow-blue-100' :
+                        proc.status === 'COMPLETED'   ? 'border-green-200 bg-green-50/50' :
+                        proc.status === 'REJECTED'    ? 'border-red-200 bg-red-50/50' :
+                        proc.status === 'DELAYED'     ? 'border-orange-200 bg-orange-50/50' :
+                        'border-gray-200 bg-white'
+                      }`}
+                    >
+                      <div className="p-3 flex items-center gap-3">
+                        {/* Step Number Circle */}
+                        <span className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${
+                          proc.status === 'IN_PROGRESS' ? 'bg-blue-500 text-white' :
+                          proc.status === 'COMPLETED'   ? 'bg-green-500 text-white' :
+                          proc.status === 'REJECTED'    ? 'bg-red-500 text-white' :
+                          proc.status === 'DELAYED'     ? 'bg-orange-400 text-white' :
+                          'bg-gray-200 text-gray-500'
+                        }`}>{proc.order}</span>
+
+                        {/* Process Name + Machine + Assigned */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className={`font-bold text-sm ${
+                              proc.status === 'IN_PROGRESS' ? 'text-blue-900' :
+                              proc.status === 'COMPLETED'   ? 'text-green-900' :
+                              proc.status === 'REJECTED'    ? 'text-red-900' :
+                              'text-gray-700'
+                            }`}>{proc.name}</p>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${processStatusColors[proc.status]}`}>
+                              {processStatusLabels[proc.status]}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-[10px] text-gray-500 mt-0.5">
+                            <span className="flex items-center gap-1">
+                              <Monitor className="w-2.5 h-2.5" />
+                              {proc.machine?.name || '—'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Users className="w-2.5 h-2.5" />
+                              {proc.assignedTo?.name || '—'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons + Notes */}
+                        <div className="flex-shrink-0 flex items-center gap-2">
+                          <ProcessStatusButton
+                            processId={proc.id}
+                            currentStatus={proc.status}
+                            processName={proc.name}
+                            prominent={proc.status === 'IN_PROGRESS' || proc.status === 'DELAYED'}
+                          />
+                          <ProcessNoteCell processId={proc.id} notes={(proc as any).notes || []} />
+                        </div>
+                      </div>
+
+                      {/* Active process instruction */}
+                      {proc.status === 'IN_PROGRESS' && (
+                        <div className="px-3 pb-3">
+                          <div className="bg-blue-100 border border-blue-200 rounded-md px-3 py-2">
+                            <p className="text-[11px] text-blue-700 font-semibold">
+                              ▶ Active — inspect this process and click COMPLETE to pass or REJECT to fail it.
+                            </p>
+                          </div>
+                        </div>
                       )}
-                    </tbody>
-                  </table>
-                </CardContent>
-              </Card>
+                    </div>
+                  ))
+                )}
+              </div>
 
               {/* Item Progress Bar */}
               <div className="flex items-center gap-3">
