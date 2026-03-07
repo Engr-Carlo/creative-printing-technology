@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Settings, User, Bell, Lock, Shield, Building2 } from "lucide-react";
 import { ProfileForm } from "@/components/ProfileForm";
 import { PasswordForm } from "@/components/PasswordForm";
+import { MigrationPanel } from "@/components/MigrationPanel";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -160,6 +161,12 @@ export default async function SettingsPage() {
                   Manage role permissions
                 </p>
               </div>
+            </div>
+
+            {/* Database Migration */}
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-xs font-bold text-gray-500 uppercase mb-3">Database Maintenance</p>
+              <MigrationPanel />
             </div>
           </CardContent>
         </Card>
