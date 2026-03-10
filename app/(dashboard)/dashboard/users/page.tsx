@@ -18,7 +18,7 @@ async function getUsers() {
 const roleConfig = {
   ADMIN: { label: "Administrator", color: "bg-purple-100 text-purple-800 border-purple-300", icon: Shield },
   ENCODER: { label: "Encoder", color: "bg-blue-100 text-blue-800 border-blue-300", icon: Briefcase },
-  EMPLOYEE: { label: "Employee", color: "bg-green-100 text-green-800 border-green-300", icon: User },
+  EMPLOYEE: { label: "Line Leader", color: "bg-green-100 text-green-800 border-green-300", icon: User },
 };
 
 export default async function UsersPage() {
@@ -70,7 +70,7 @@ export default async function UsersPage() {
           <p className="text-lg font-bold text-blue-600">{stats.encoders}</p>
         </CardContent></Card>
         <Card className="border"><CardContent className="p-2">
-          <p className="text-[10px] text-muted-foreground">Employees</p>
+          <p className="text-[10px] text-muted-foreground">Line Leaders</p>
           <p className="text-lg font-bold text-green-600">{stats.employees}</p>
         </CardContent></Card>
       </div>

@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Settings, User, Bell, Lock, Shield, Building2 } from "lucide-react";
 import { ProfileForm } from "@/components/ProfileForm";
 import { PasswordForm } from "@/components/PasswordForm";
-import { MigrationPanel } from "@/components/MigrationPanel";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -79,7 +78,7 @@ export default async function SettingsPage() {
                 <p className="text-xs text-muted-foreground">{session.user.email}</p>
                 <p className="text-[10px] text-primary font-semibold mt-0.5">
                   {session.user.role === "ADMIN" ? "Administrator" : 
-                   session.user.role === "ENCODER" ? "Encoder" : "Employee"}
+                   session.user.role === "ENCODER" ? "Encoder" : "Line Leader"}
                 </p>
               </div>
             </div>
@@ -91,7 +90,7 @@ export default async function SettingsPage() {
                   id="role"
                   defaultValue={
                     session.user.role === "ADMIN" ? "Administrator" : 
-                    session.user.role === "ENCODER" ? "Encoder" : "Employee"
+                    session.user.role === "ENCODER" ? "Encoder" : "Line Leader"
                   }
                   disabled
                   className="bg-gray-50"
@@ -161,12 +160,6 @@ export default async function SettingsPage() {
                   Manage role permissions
                 </p>
               </div>
-            </div>
-
-            {/* Database Migration */}
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-xs font-bold text-gray-500 uppercase mb-3">Database Maintenance</p>
-              <MigrationPanel />
             </div>
           </CardContent>
         </Card>

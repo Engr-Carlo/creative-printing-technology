@@ -113,6 +113,7 @@ async function main() {
       name: 'Line Leader',
       password: hashedPassword,
       role: UserRole.EMPLOYEE,
+      departmentId: manual.id,
     },
   });
 
@@ -127,16 +128,7 @@ async function main() {
     },
   });
 
-  const employee = await prisma.user.upsert({
-    where: { email: 'employee@cpt.com' },
-    update: {},
-    create: {
-      email: 'employee@cpt.com',
-      name: 'Employee',
-      password: hashedPassword,
-      role: UserRole.EMPLOYEE,
-    },
-  });
+
 
   // Create Sample Items
   console.log('Creating sample items...');
@@ -253,7 +245,7 @@ async function main() {
       data: {
         ...proc,
         itemId: item2.id,
-        assignedToId: employee.id,
+        assignedToId: lineLeader.id,
       },
     });
   }
@@ -289,7 +281,7 @@ async function main() {
   await prisma.itemAssignment.create({
     data: {
       itemId: item2.id,
-      userId: employee.id,
+      userId: lineLeader.id,
     },
   });
 
@@ -307,7 +299,7 @@ async function main() {
     data: {
       content: 'Material quality check passed. Proceeding to next process.',
       itemId: item2.id,
-      userId: employee.id,
+      userId: lineLeader.id,
     },
   });
 
@@ -316,7 +308,6 @@ async function main() {
   console.log('Admin: admin@cpt.com / password123');
   console.log('Line Leader: lineleader@cpt.com / password123');
   console.log('Encoder: encoder@cpt.com / password123');
-  console.log('Employee: employee@cpt.com / password123');
 }
 
 main()
