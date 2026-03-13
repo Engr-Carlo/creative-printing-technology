@@ -14,6 +14,7 @@ import { ProductionTrendChart } from "@/components/charts/ProductionTrendChart";
 import { ItemDistributionChart } from "@/components/charts/ItemDistributionChart";
 import ItemNoteCell from "@/components/ItemNoteCell";
 import { QuickGenerateButton } from "@/components/QuickGenerateButton";
+import { DeleteButton } from "@/components/DeleteButton";
 
 // Department category config - only MANUAL is active, others are placeholders
 const DEPARTMENT_CATEGORIES = [
@@ -34,6 +35,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-800 border-yellow-300" },
   IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-800 border-blue-300" },
   COMPLETED: { label: "Completed", color: "bg-green-100 text-green-800 border-green-300" },
+  REJECTED: { label: "Rejected", color: "bg-red-100 text-red-800 border-red-300" },
 };
 
 async function getEncoderStats() {
@@ -391,11 +393,14 @@ export default async function EncoderDashboardPage({
                               <ItemNoteCell itemId={item.id} notes={item.notes || []} />
                             </td>
                             <td className="py-1.5 px-2 text-center">
-                              <Link href={`/dashboard/items/${item.id}`}>
-                                <Button variant="outline" size="sm" className="text-[11px] h-6 px-2">
-                                  View
-                                </Button>
-                              </Link>
+                              <div className="flex items-center justify-center gap-1">
+                                <Link href={`/dashboard/items/${item.id}`}>
+                                  <Button variant="outline" size="sm" className="text-[11px] h-6 px-2">
+                                    View
+                                  </Button>
+                                </Link>
+                                <DeleteButton id={item.id} type="item" name={item.name} />
+                              </div>
                             </td>
                           </tr>
                         );

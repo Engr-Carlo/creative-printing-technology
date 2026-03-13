@@ -38,7 +38,7 @@ const processStatusLabels: Record<string, string> = {
 
 async function getLineLeaderData() {
   const manualDept = await prisma.department.findFirst({ where: { type: "MANUAL" } });
-  if (!manualDept) return { activeItems: [], completedItems: [], deptName: "Manual Department" };
+  if (!manualDept) return { activeItems: [], completedItems: [], rejectedItems: [], deptName: "Manual Department" };
 
   const items = await prisma.item.findMany({
     where: { departmentId: manualDept.id },
@@ -79,14 +79,15 @@ async function getLineLeaderData() {
     take: 200,
   });
 
-  const activeItems = items.filter((i) => i.status !== "COMPLETED");
+  const activeItems = items.filter((i) => i.status !== "COMPLETED" && i.status !== "REJECTED");
   const completedItems = items.filter((i) => i.status === "COMPLETED");
+  const rejectedItems = items.filter((i) => i.status === "REJECTED");
 
-  return { activeItems, completedItems, deptName: manualDept.name };
+  return { activeItems, completedItems, rejectedItems, deptName: manualDept.name };
 }
 
 export default async function EmployeeDashboardPage(props: {
-  searchParams: Promise<{ item?: string; showCompleted?: string }>;
+  searchParams: Promise<{ item?: string; showCompleted?: string; showRejected?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
@@ -97,14 +98,15 @@ export default async function EmployeeDashboardPage(props: {
   const searchParams = await props.searchParams;
   const selectedItemId = searchParams.item;
   const showCompleted = searchParams.showCompleted === "1";
+  const showRejected = searchParams.showRejected === "1";
 
-  const { activeItems, completedItems, deptName } = await getLineLeaderData();
-  const allItems = [...activeItems, ...completedItems];
+  const { activeItems, completedItems, rejectedItems, deptName } = await getLineLeaderData();
+  const allItems = [...activeItems, ...completedItems, ...rejectedItems];
   const selectedItem = selectedItemId ? allItems.find((i) => i.id === selectedItemId) : null;
 
   // Stats
   const allProc = allItems.flatMap((i) => i.processes);
-  const completedProc = allProc.filter((p) => p.status === "COMPLETED").length;
+  const completedProc = allProc.filter((p: { status: string }) => p.status === "COMPLETED").length;
 
   return (
     <div className="flex flex-col h-full">
@@ -123,6 +125,11 @@ export default async function EmployeeDashboardPage(props: {
           <div className="text-center">
             <p className="text-[10px] opacity-80">Completed</p>
             <p className="text-lg font-bold">{completedItems.length}</p>
+          </div>
+          <div className="h-8 w-px bg-white/30" />
+          <div className="text-center">
+            <p className="text-[10px] opacity-80">Rejected</p>
+            <p className="text-lg font-bold">{rejectedItems.length}</p>
           </div>
           <div className="h-8 w-px bg-white/30" />
           <div className="text-center">
@@ -190,8 +197,8 @@ export default async function EmployeeDashboardPage(props: {
             {completedItems.length > 0 && (
               <>
                 <Link href={showCompleted
-                  ? `/dashboard/employee${selectedItemId ? `?item=${selectedItemId}` : ""}`
-                  : `/dashboard/employee?showCompleted=1${selectedItemId ? `&item=${selectedItemId}` : ""}`
+                  ? `/dashboard/employee${selectedItemId ? `?item=${selectedItemId}` : ""}${showRejected ? (selectedItemId ? "&showRejected=1" : "?showRejected=1") : ""}`
+                  : `/dashboard/employee?showCompleted=1${selectedItemId ? `&item=${selectedItemId}` : ""}${showRejected ? "&showRejected=1" : ""}`
                 }>
                   <div className="px-3 py-2 bg-green-50 border-b border-t cursor-pointer hover:bg-green-100 transition-colors">
                     <div className="flex items-center justify-between">
@@ -209,7 +216,7 @@ export default async function EmployeeDashboardPage(props: {
                   return (
                     <Link
                       key={item.id}
-                      href={isSelected ? `/dashboard/employee?showCompleted=1` : `/dashboard/employee?item=${item.id}&showCompleted=1`}
+                      href={isSelected ? `/dashboard/employee?showCompleted=1${showRejected ? "&showRejected=1" : ""}` : `/dashboard/employee?item=${item.id}&showCompleted=1${showRejected ? "&showRejected=1" : ""}`}
                     >
                       <div className={`px-3 py-2 border-b cursor-pointer transition-all ${
                         isSelected ? "bg-green-50 border-l-4 border-l-green-500" : "hover:bg-gray-50 border-l-4 border-l-transparent"
@@ -226,6 +233,54 @@ export default async function EmployeeDashboardPage(props: {
                             <p className="text-[11px] text-gray-400 truncate">{item.name}</p>
                           </div>
                           <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </>
+            )}
+
+            {/* Rejected Section */}
+            {rejectedItems.length > 0 && (
+              <>
+                <Link href={showRejected
+                  ? `/dashboard/employee${selectedItemId ? `?item=${selectedItemId}` : ""}${showCompleted ? (selectedItemId ? "&showCompleted=1" : "?showCompleted=1") : ""}`
+                  : `/dashboard/employee?showRejected=1${selectedItemId ? `&item=${selectedItemId}` : ""}${showCompleted ? "&showCompleted=1" : ""}`
+                }>
+                  <div className="px-3 py-2 bg-red-50 border-b border-t cursor-pointer hover:bg-red-100 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-bold text-red-700 uppercase flex items-center gap-1">
+                        <span className="w-3 h-3 inline-flex items-center justify-center">✕</span>
+                        Rejected ({rejectedItems.length})
+                      </p>
+                      <span className="text-[10px] text-red-600">{showRejected ? "▾ Hide" : "▸ Show"}</span>
+                    </div>
+                  </div>
+                </Link>
+                {showRejected && rejectedItems.map((item) => {
+                  const isSelected = selectedItemId === item.id;
+                  const badge = TYPE_BADGE[item.type] || { label: "?", color: "bg-gray-400 text-white" };
+                  return (
+                    <Link
+                      key={item.id}
+                      href={isSelected ? `/dashboard/employee?showRejected=1${showCompleted ? "&showCompleted=1" : ""}` : `/dashboard/employee?item=${item.id}&showRejected=1${showCompleted ? "&showCompleted=1" : ""}`}
+                    >
+                      <div className={`px-3 py-2 border-b cursor-pointer transition-all ${
+                        isSelected ? "bg-red-50 border-l-4 border-l-red-500" : "hover:bg-gray-50 border-l-4 border-l-transparent"
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <span className={`flex-shrink-0 w-6 h-6 rounded text-[10px] font-bold flex items-center justify-center ${badge.color} opacity-60`}>
+                            {badge.label}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-[11px] font-bold text-gray-400">{item.itemNumber}</span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-700">REJECTED</span>
+                            </div>
+                            <p className="text-[11px] text-gray-400 truncate">{item.name}</p>
+                          </div>
+                          <span className="text-red-400 text-xs flex-shrink-0">✕</span>
                         </div>
                       </div>
                     </Link>
@@ -260,6 +315,7 @@ export default async function EmployeeDashboardPage(props: {
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                         selectedItem.status === "COMPLETED" ? "bg-green-100 text-green-700" :
                         selectedItem.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
+                        selectedItem.status === "REJECTED" ? "bg-red-100 text-red-700" :
                         "bg-yellow-100 text-yellow-700"
                       }`}>{selectedItem.status.replace(/_/g, " ")}</span>
                     </div>
@@ -282,7 +338,7 @@ export default async function EmployeeDashboardPage(props: {
 
                 {/* Progress Bar */}
                 {(() => {
-                  const doneProc = selectedItem.processes.filter((p) => p.status === "COMPLETED").length;
+                  const doneProc = selectedItem.processes.filter((p: { status: string }) => p.status === "COMPLETED").length;
                   const totalProc = selectedItem.processes.length;
                   const pct = totalProc > 0 ? Math.round((doneProc / totalProc) * 100) : 0;
                   return (
@@ -308,7 +364,7 @@ export default async function EmployeeDashboardPage(props: {
                     Process Evaluation — {TYPE_LABELS[selectedItem.type] || selectedItem.type}
                   </p>
                   <p className="text-[10px] text-gray-500">
-                    {selectedItem.processes.filter((p) => p.status === "COMPLETED").length}/{selectedItem.processes.length} complete
+                    {selectedItem.processes.filter((p: { status: string }) => p.status === "COMPLETED").length}/{selectedItem.processes.length} complete
                   </p>
                 </div>
 

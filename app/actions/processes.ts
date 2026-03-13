@@ -64,6 +64,13 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
       }
     }
 
+    if (newStatus === "REJECTED") {
+      await prisma.item.update({
+        where: { id: process.itemId },
+        data: { status: "REJECTED" },
+      });
+    }
+
     revalidatePath("/dashboard/my-processes");
     revalidatePath("/dashboard/employee");
     revalidatePath("/dashboard/my-items");

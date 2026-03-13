@@ -42,6 +42,7 @@ enum ItemStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
+  REJECTED
 }
 
 enum ProcessStatus {

@@ -127,8 +127,8 @@ export async function updateItemOutput(itemId: string, currentOutput: number) {
 
 export async function deleteItem(itemId: string) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return { error: "Unauthorized - Admin only" };
+  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "ENCODER")) {
+    return { error: "Unauthorized" };
   }
 
   try {
@@ -137,7 +137,9 @@ export async function deleteItem(itemId: string) {
     });
 
     revalidatePath("/dashboard/items");
-    redirect("/dashboard/items");
+    revalidatePath("/dashboard/encoder");
+    revalidatePath("/dashboard/employee");
+    return { success: true };
   } catch (error) {
     console.error("Error deleting item:", error);
     return { error: "Failed to delete item" };
