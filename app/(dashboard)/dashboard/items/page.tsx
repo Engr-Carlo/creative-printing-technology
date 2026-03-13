@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Package, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
-import { RawMaterialsSelect } from "@/components/RawMaterialsSelect";
+import { RawMaterialsSelect, RawMaterialsBadge } from "@/components/RawMaterialsSelect";
 import { QuickGenerateButton } from "@/components/QuickGenerateButton";
 
 async function getItems() {
@@ -128,7 +128,11 @@ export default async function ItemsPage() {
                           </div>
                         </td>
                         <td className="py-1.5 px-2">
-                          <RawMaterialsSelect itemId={item.id} currentStatus={(item as any).rawMaterials || "SHORT"} />
+                          {session.user.role === "ADMIN" ? (
+                            <RawMaterialsSelect itemId={item.id} currentStatus={(item as any).rawMaterials || "SHORT"} />
+                          ) : (
+                            <RawMaterialsBadge status={(item as any).rawMaterials || "SHORT"} />
+                          )}
                         </td>
                         <td className="py-1.5 px-2">
                           <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold border ${config?.color}`}>
