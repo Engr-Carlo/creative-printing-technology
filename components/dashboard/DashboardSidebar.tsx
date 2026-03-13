@@ -10,8 +10,6 @@ import {
   BarChart3,
   Users,
   Building2,
-  Cog,
-  ListTodo,
 } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -35,8 +33,6 @@ const navigation = [
   
   // Employee / Line Leader navigation
   { name: "Dashboard", href: "/dashboard/employee", icon: LayoutDashboard, roles: ["EMPLOYEE"] },
-  { name: "My Items", href: "/dashboard/my-items", icon: Package, roles: ["EMPLOYEE"] },
-  { name: "My Processes", href: "/dashboard/my-processes", icon: ListTodo, roles: ["EMPLOYEE"] },
   
   // Common for all
   { name: "Settings", href: "/dashboard/settings", icon: Settings, roles: ["ADMIN", "ENCODER", "EMPLOYEE"] },
@@ -99,10 +95,12 @@ export default function DashboardSidebar({ user }: DashboardSidebarProps) {
       <div className="p-4 border-t border-white/10 bg-black/20">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-primary to-orange-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-            {user.name?.charAt(0).toUpperCase() || "U"}
+            {user.role === "ADMIN" ? "A" : user.role === "ENCODER" ? "E" : "L"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate">{user.name}</p>
+            <p className="text-sm font-semibold truncate">
+              {user.role === "ADMIN" ? "Administrator" : user.role === "ENCODER" ? "Encoder" : "Line Leader"}
+            </p>
             <p className="text-xs text-gray-400 capitalize">
               {user.role?.toLowerCase()}
             </p>

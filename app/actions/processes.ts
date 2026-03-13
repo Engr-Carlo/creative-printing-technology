@@ -43,6 +43,27 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
       },
     });
 
+    // Auto-update item status based on process changes
+    if (newStatus === "IN_PROGRESS" && process.item.status === "PENDING") {
+      await prisma.item.update({
+        where: { id: process.itemId },
+        data: { status: "IN_PROGRESS" },
+      });
+    }
+
+    if (newStatus === "COMPLETED") {
+      const siblings = await prisma.process.findMany({
+        where: { itemId: process.itemId },
+        select: { status: true },
+      });
+      if (siblings.every((p) => p.status === "COMPLETED")) {
+        await prisma.item.update({
+          where: { id: process.itemId },
+          data: { status: "COMPLETED" },
+        });
+      }
+    }
+
     revalidatePath("/dashboard/my-processes");
     revalidatePath("/dashboard/employee");
     revalidatePath("/dashboard/my-items");

@@ -22,19 +22,24 @@ export function QuickGenerateButton() {
   const [generated, setGenerated] = useState<{ itemId: string; itemNumber: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const defaultDeadline = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+
   const [form, setForm] = useState({
     type: "SHEETED",
     name: "",
     customer: "",
     quantity: "1",
     targetOutput: "0",
+    color: "",
+    rawMaterials: "NOT_AVAILABLE",
+    deadline: defaultDeadline,
   });
 
   function handleOpen() {
     setOpen(true);
     setGenerated(null);
     setError(null);
-    setForm({ type: "SHEETED", name: "", customer: "", quantity: "1", targetOutput: "0" });
+    setForm({ type: "SHEETED", name: "", customer: "", quantity: "1", targetOutput: "0", color: "", rawMaterials: "NOT_AVAILABLE", deadline: defaultDeadline });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -48,6 +53,9 @@ export function QuickGenerateButton() {
         customer: form.customer,
         quantity: parseInt(form.quantity) || 1,
         targetOutput: parseInt(form.targetOutput) || 0,
+        color: form.color || undefined,
+        rawMaterials: form.rawMaterials,
+        deadline: form.deadline || undefined,
       });
       if (result.error) {
         setError(result.error);
@@ -173,6 +181,40 @@ export function QuickGenerateButton() {
                     min="0"
                     value={form.targetOutput}
                     onChange={(e) => setForm((f) => ({ ...f, targetOutput: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="gen-color" className="text-xs font-bold uppercase text-gray-500">Color</Label>
+                <Input
+                  id="gen-color"
+                  placeholder="e.g. Full Color, Black & White"
+                  value={form.color}
+                  onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="gen-raw" className="text-xs font-bold uppercase text-gray-500">Raw Materials</Label>
+                  <select
+                    id="gen-raw"
+                    value={form.rawMaterials}
+                    onChange={(e) => setForm((f) => ({ ...f, rawMaterials: e.target.value }))}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="NOT_AVAILABLE">Not Available</option>
+                    <option value="AVAILABLE">Available</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="gen-deadline" className="text-xs font-bold uppercase text-gray-500">Deadline</Label>
+                  <Input
+                    id="gen-deadline"
+                    type="date"
+                    value={form.deadline}
+                    onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))}
                   />
                 </div>
               </div>

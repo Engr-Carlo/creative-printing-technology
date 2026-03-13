@@ -6,8 +6,6 @@ import {
   Package,
   Clock,
   CheckCircle2,
-  PlusCircle,
-  Calendar,
 } from "lucide-react";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
@@ -73,7 +71,7 @@ async function getItemsByDepartment(departmentType: string) {
       },
       assignments: {
         select: {
-          user: { select: { name: true } },
+          user: { select: { id: true } },
         },
       },
       notes: {
@@ -192,20 +190,11 @@ export default async function EncoderDashboardPage({
       <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 shadow-md">
         <div className="flex items-center justify-between">
           <div className="text-white">
-            <h2 className="text-xl font-bold">{session.user.name}</h2>
-            <p className="text-xs opacity-80">Encoder — Production Monitoring</p>
+            <h2 className="text-xl font-bold">Encoder</h2>
+            <p className="text-xs opacity-80">Production Monitoring</p>
           </div>
           <div className="flex items-center gap-2">
             <QuickGenerateButton />
-            <Link href="/dashboard/items/new">
-              <Button
-                size="sm"
-                className="gap-1 bg-white text-orange-600 hover:bg-orange-50 font-semibold text-xs"
-              >
-                <PlusCircle className="w-4 h-4" />
-                Create Item
-              </Button>
-            </Link>
           </div>
         </div>
       </div>
@@ -237,7 +226,7 @@ export default async function EncoderDashboardPage({
       </div>
 
       {/* Charts - Compact Side by Side */}
-      <div className="grid gap-3 md:grid-cols-2 h-[180px]">
+      <div className="grid gap-3 md:grid-cols-2" style={{ minHeight: "180px" }}>
         <ProductionTrendChart data={chartData.statusData} />
         <ItemDistributionChart data={chartData.deptData} title="Items by Department" />
       </div>
@@ -348,12 +337,6 @@ export default async function EncoderDashboardPage({
                           <p className="text-xs font-semibold text-gray-500">
                             No items in {activeCategoryConfig?.label}
                           </p>
-                          <Link href="/dashboard/items/new" className="mt-2 inline-block">
-                            <Button size="sm" className="mt-2 text-xs">
-                              <PlusCircle className="w-3 h-3 mr-1" />
-                              Create Item
-                            </Button>
-                          </Link>
                         </td>
                       </tr>
                     ) : (

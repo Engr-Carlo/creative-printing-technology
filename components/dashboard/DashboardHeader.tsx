@@ -8,10 +8,13 @@ interface DashboardHeaderProps {
   user: {
     name?: string | null;
     email?: string | null;
+    role?: string;
   };
 }
 
 export default function DashboardHeader({ user }: DashboardHeaderProps) {
+  const roleLabel = user.role === "ADMIN" ? "Administrator" : user.role === "ENCODER" ? "Encoder" : "Line Leader";
+
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -37,7 +40,7 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
 
         <div className="flex items-center gap-3">
           <div className="text-right border-r pr-3">
-            <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+            <p className="text-sm font-semibold text-gray-900">{roleLabel}</p>
             <p className="text-[11px] text-muted-foreground">{user.email}</p>
           </div>
           <Button

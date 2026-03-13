@@ -2,10 +2,11 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Package, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { Package, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { RawMaterialsSelect } from "@/components/RawMaterialsSelect";
+import { QuickGenerateButton } from "@/components/QuickGenerateButton";
 
 async function getItems() {
   return prisma.item.findMany({
@@ -53,9 +54,7 @@ export default async function ItemsPage() {
           <h1 className="text-lg font-bold text-gray-900">Items Management</h1>
           <p className="text-xs text-muted-foreground">Manage production items</p>
         </div>
-        <Link href="/dashboard/items/new">
-          <Button size="sm" className="h-7 text-xs"><Plus className="w-3 h-3 mr-1" />New Item</Button>
-        </Link>
+        <QuickGenerateButton />
       </div>
 
       {/* Compact Stats */}

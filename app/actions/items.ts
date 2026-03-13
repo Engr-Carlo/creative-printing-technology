@@ -3,7 +3,6 @@
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { PROCESS_TEMPLATES } from "@/lib/constants/processes";
 
 export async function quickGenerateItem(data: {
@@ -12,6 +11,9 @@ export async function quickGenerateItem(data: {
   customer: string;
   quantity: number;
   targetOutput: number;
+  color?: string;
+  rawMaterials?: string;
+  deadline?: string;
 }) {
   const session = await auth();
   if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "ENCODER")) {
@@ -35,7 +37,11 @@ export async function quickGenerateItem(data: {
     const seq = String(todayCount + 1).padStart(3, "0");
     const itemNumber = `MAN-${dateStr}-${seq}`;
 
-    const deadline = new Date(); deadline.setDate(deadline.getDate() + 7);
+    const deadline = data.deadline ? new Date(data.deadline) : new Date(Date.now() + 7 * 86400000);
+
+    const rawMaterials = data.rawMaterials && ["APPROVAL", "RELEASE_TO_PRODUCTION", "NOT_AVAILABLE"].includes(data.rawMaterials)
+      ? data.rawMaterials
+      : "NOT_AVAILABLE";
 
     const item = await prisma.item.create({
       data: {
@@ -47,8 +53,8 @@ export async function quickGenerateItem(data: {
         departmentId: department.id,
         targetOutput: data.targetOutput || 0,
         deadline,
-        color: null,
-        rawMaterials: "NOT_AVAILABLE",
+        color: data.color || null,
+        rawMaterials: rawMaterials as any,
         status: "PENDING",
         currentOutput: 0,
       },
@@ -72,82 +78,6 @@ export async function quickGenerateItem(data: {
   } catch (error) {
     console.error("Error generating item:", error);
     return { error: "Failed to generate item" };
-  }
-}
-
-export async function createItem(prevState: any, formData: FormData) {
-  const session = await auth();
-  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "ENCODER")) {
-    return { error: "Unauthorized" };
-  }
-
-  try {
-    const itemNumber = formData.get("itemNumber") as string;
-    const name = formData.get("name") as string;
-    const type = formData.get("type") as string;
-    const quantity = parseInt(formData.get("quantity") as string);
-    const customer = formData.get("customer") as string;
-    const departmentId = formData.get("departmentId") as string;
-    const targetOutput = parseInt(formData.get("targetOutput") as string);
-    const deadline = new Date(formData.get("deadline") as string);
-    const color = formData.get("color") as string || null;
-    const rawMaterials = (formData.get("rawMaterials") as string) || "NOT_AVAILABLE";
-
-    // Validate type
-    if (!["FOLDED", "SHEETED", "STITCHING"].includes(type)) {
-      return { error: "Invalid item type. Must be FOLDED, SHEETED, or STITCHING." };
-    }
-
-    // Validate raw materials status
-    if (!["APPROVAL", "RELEASE_TO_PRODUCTION", "NOT_AVAILABLE"].includes(rawMaterials)) {
-      return { error: "Invalid raw materials status." };
-    }
-
-    // Check if item number already exists
-    const existing = await prisma.item.findUnique({
-      where: { itemNumber },
-    });
-
-    if (existing) {
-      return { error: "Item number already exists" };
-    }
-
-    const item = await prisma.item.create({
-      data: {
-        itemNumber,
-        name,
-        type: type as any,
-        quantity,
-        customer,
-        departmentId,
-        targetOutput,
-        deadline,
-        color,
-        rawMaterials: rawMaterials as any,
-        status: "PENDING",
-        currentOutput: 0,
-      },
-    });
-
-    // Auto-create processes based on item type
-    const template = PROCESS_TEMPLATES[type];
-    if (template) {
-      await prisma.process.createMany({
-        data: template.map((processName, index) => ({
-          name: processName,
-          order: index + 1,
-          itemId: item.id,
-        })),
-      });
-    }
-
-    revalidatePath("/dashboard/items");
-    revalidatePath("/dashboard/encoder");
-    revalidatePath("/dashboard/employee");
-    return { success: true, itemId: item.id };
-  } catch (error) {
-    console.error("Error creating item:", error);
-    return { error: "Failed to create item" };
   }
 }
 
