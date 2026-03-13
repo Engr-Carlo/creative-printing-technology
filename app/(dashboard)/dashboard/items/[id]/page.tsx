@@ -142,6 +142,12 @@ export default async function ItemDetailPage({
                   <p className="font-semibold">{item.color}</p>
                 </div>
               )}
+              {(item as any).machines && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Machine(s)</p>
+                  <p className="font-semibold">{(item as any).machines}</p>
+                </div>
+              )}
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Raw Materials</p>
                 <div className="mt-1">
@@ -166,15 +172,15 @@ export default async function ItemDetailPage({
             <div className="pt-4 border-t">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-semibold">Production Progress</p>
-                <p className="text-sm font-bold text-primary">{progress}%</p>
+                <p className="text-sm font-bold text-primary">{processProgress}%</p>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-4">
                 <div
                   className="bg-gradient-to-r from-primary to-orange-600 h-4 rounded-full transition-all flex items-center justify-end px-2"
-                  style={{ width: `${Math.min(progress, 100)}%` }}
+                  style={{ width: `${Math.min(processProgress, 100)}%` }}
                 >
-                  {progress > 10 && (
-                    <span className="text-xs font-bold text-white">{progress}%</span>
+                  {processProgress > 10 && (
+                    <span className="text-xs font-bold text-white">{processProgress}%</span>
                   )}
                 </div>
               </div>
@@ -231,7 +237,7 @@ export default async function ItemDetailPage({
                           }`}>{process.order}</span>
                         </td>
                         <td className="py-2.5 px-3 font-semibold text-gray-900">{process.name}</td>
-                        <td className="py-2.5 px-3 text-gray-600">{process.machine?.name || <span className="text-gray-300">—</span>}</td>
+                        <td className="py-2.5 px-3 text-gray-600">{(item as any).machines || <span className="text-gray-300">—</span>}</td>
                         <td className="py-2.5 px-3">
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${pConfig?.color}`}>
                             <PStatusIcon className="w-3 h-3" />
