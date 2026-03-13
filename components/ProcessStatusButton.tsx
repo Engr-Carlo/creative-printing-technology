@@ -12,9 +12,13 @@ interface ProcessStatusButtonProps {
   processName: string;
   /** When true, shows larger prominent Complete/Reject buttons for the evaluation panel */
   prominent?: boolean;
+  /** When true, the process cannot be started — button is grayed out with a reason tooltip */
+  locked?: boolean;
+  /** Reason why the process is locked (shown as text) */
+  lockReason?: string;
 }
 
-export function ProcessStatusButton({ processId, currentStatus, processName, prominent = false }: ProcessStatusButtonProps) {
+export function ProcessStatusButton({ processId, currentStatus, processName, prominent = false, locked = false, lockReason }: ProcessStatusButtonProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [modal, setModal] = useState<"completed" | "rejected" | null>(null);
@@ -46,6 +50,21 @@ export function ProcessStatusButton({ processId, currentStatus, processName, pro
 
   function renderButtons() {
     if (currentStatus === "NOT_STARTED") {
+      if (locked) {
+        return (
+          <div className="flex items-center gap-2">
+            <Button
+              size={prominent ? "default" : "sm"}
+              className={`${prominent ? "gap-2" : "text-xs"} bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300`}
+              disabled
+            >
+              <PlayCircle className={prominent ? "w-4 h-4" : "w-3 h-3 mr-1"} />
+              {prominent ? "Start Evaluation" : "Start Process"}
+            </Button>
+            {lockReason && <span className="text-[10px] text-gray-400 italic max-w-[140px]">{lockReason}</span>}
+          </div>
+        );
+      }
       return (
         <Button
           size={prominent ? "default" : "sm"}

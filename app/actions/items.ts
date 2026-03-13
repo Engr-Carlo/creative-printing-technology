@@ -15,6 +15,7 @@ export async function quickGenerateItem(data: {
   color?: string;
   rawMaterials?: string;
   deadline?: string;
+  machines?: string;
 }) {
   const session = await auth();
   if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "ENCODER")) {
@@ -55,6 +56,7 @@ export async function quickGenerateItem(data: {
         targetOutput: data.targetOutput || 0,
         deadline,
         color: data.color || null,
+        machines: data.machines || null,
         rawMaterials: rawMaterials as any,
         status: "PENDING",
         currentOutput: 0,

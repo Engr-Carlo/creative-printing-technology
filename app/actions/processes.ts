@@ -20,6 +20,28 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
       return { error: "Process not found" };
     }
 
+    // --- Server-side guards ---
+    // 1. Raw materials must be RELEASE_TO_PRODUCTION to start a process
+    if (newStatus === "IN_PROGRESS" && process.item.rawMaterials !== "RELEASE_TO_PRODUCTION") {
+      return { error: "Cannot start process — raw materials not released for production." };
+    }
+
+    // 2. Sequential enforcement: previous process must be COMPLETED before starting next
+    if (newStatus === "IN_PROGRESS") {
+      const previousProcess = await prisma.process.findFirst({
+        where: { itemId: process.itemId, order: process.order - 1 },
+        select: { status: true, name: true },
+      });
+      if (previousProcess && previousProcess.status !== "COMPLETED") {
+        return { error: `Cannot start — previous process "${previousProcess.name}" is not yet completed.` };
+      }
+    }
+
+    // 3. If item is already REJECTED, no new process actions allowed
+    if (process.item.status === "REJECTED" && newStatus === "IN_PROGRESS") {
+      return { error: "Cannot start process — item has been rejected." };
+    }
+
     // Record the old status for update tracking
     const oldStatus = process.status;
 

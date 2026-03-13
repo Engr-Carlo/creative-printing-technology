@@ -33,13 +33,14 @@ export function QuickGenerateButton() {
     color: "",
     rawMaterials: "NOT_AVAILABLE",
     deadline: defaultDeadline,
+    machines: [] as string[],
   });
 
   function handleOpen() {
     setOpen(true);
     setGenerated(null);
     setError(null);
-    setForm({ type: "SHEETED", name: "", customer: "", quantity: "1", targetOutput: "0", color: "", rawMaterials: "NOT_AVAILABLE", deadline: defaultDeadline });
+    setForm({ type: "SHEETED", name: "", customer: "", quantity: "1", targetOutput: "0", color: "", rawMaterials: "NOT_AVAILABLE", deadline: defaultDeadline, machines: [] });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -56,6 +57,7 @@ export function QuickGenerateButton() {
         color: form.color || undefined,
         rawMaterials: form.rawMaterials,
         deadline: form.deadline || undefined,
+        machines: form.machines.length > 0 ? form.machines.join(", ") : undefined,
       });
       if (result.error) {
         setError(result.error);
@@ -187,12 +189,40 @@ export function QuickGenerateButton() {
 
               <div className="space-y-1">
                 <Label htmlFor="gen-color" className="text-xs font-bold uppercase text-gray-500">Color</Label>
-                <Input
+                <select
                   id="gen-color"
-                  placeholder="e.g. Full Color, Black & White"
                   value={form.color}
                   onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
-                />
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">Select Color</option>
+                  <option value="Single Color Black">Single Color Black</option>
+                  <option value="Two Colors">Two Colors</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase text-gray-500">Machine</Label>
+                <div className="flex flex-wrap gap-3">
+                  {["Machine 1", "Machine 2", "Machine 3"].map((machine) => (
+                    <label key={machine} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.machines.includes(machine)}
+                        onChange={(e) => {
+                          setForm((f) => ({
+                            ...f,
+                            machines: e.target.checked
+                              ? [...f.machines, machine]
+                              : f.machines.filter((m) => m !== machine),
+                          }));
+                        }}
+                        className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                      />
+                      <span className="text-sm">{machine}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

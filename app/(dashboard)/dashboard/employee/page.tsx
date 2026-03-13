@@ -53,6 +53,7 @@ async function getLineLeaderData() {
       customer: true,
       type: true,
       color: true,
+      machines: true,
       rawMaterials: true,
       processes: {
         select: {
@@ -343,6 +344,7 @@ export default async function EmployeeDashboardPage(props: {
                   <span><strong>Type:</strong> {TYPE_LABELS[selectedItem.type] || selectedItem.type}</span>
                   <span><strong>Deadline:</strong> {new Date(selectedItem.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                   {selectedItem.color && <span><strong>Color:</strong> {selectedItem.color}</span>}
+                  {selectedItem.machines && <span><strong>Machine:</strong> {selectedItem.machines}</span>}
                   <span><strong>Raw Materials:</strong> {selectedItem.rawMaterials === "RELEASE_TO_PRODUCTION" ? "✓ Released to Production" : selectedItem.rawMaterials === "APPROVAL" ? "⏳ For Approval" : "✗ Not Available"}</span>
                 </div>
 
@@ -384,7 +386,31 @@ export default async function EmployeeDashboardPage(props: {
                       No processes defined for this item
                     </div>
                   ) : (
-                    selectedItem.processes.map((proc) => (
+                    selectedItem.processes.map((proc, idx) => {
+                      // Determine if this process should be locked
+                      const itemRejected = selectedItem.status === "REJECTED";
+                      const rawNotReady = selectedItem.rawMaterials !== "RELEASE_TO_PRODUCTION";
+                      const prevProc = idx > 0 ? selectedItem.processes[idx - 1] : null;
+                      const prevNotDone = prevProc && prevProc.status !== "COMPLETED";
+                      const anyPrevRejected = selectedItem.processes.slice(0, idx).some((p: { status: string }) => p.status === "REJECTED");
+
+                      let processLocked = false;
+                      let lockReason = "";
+
+                      if (proc.status === "NOT_STARTED") {
+                        if (itemRejected || anyPrevRejected) {
+                          processLocked = true;
+                          lockReason = "Item rejected";
+                        } else if (rawNotReady) {
+                          processLocked = true;
+                          lockReason = selectedItem.rawMaterials === "APPROVAL" ? "Raw materials pending approval" : "Raw materials not available";
+                        } else if (prevNotDone) {
+                          processLocked = true;
+                          lockReason = `Complete "${prevProc!.name}" first`;
+                        }
+                      }
+
+                      return (
                       <div
                         key={proc.id}
                         className={`rounded-lg border-2 transition-all ${
@@ -392,6 +418,7 @@ export default async function EmployeeDashboardPage(props: {
                           proc.status === "COMPLETED"   ? "border-green-200 bg-green-50/50" :
                           proc.status === "REJECTED"    ? "border-red-200 bg-red-50/50" :
                           proc.status === "DELAYED"     ? "border-orange-200 bg-orange-50/50" :
+                          processLocked               ? "border-gray-200 bg-gray-50 opacity-60" :
                           "border-gray-200 bg-white"
                         }`}
                       >
@@ -430,6 +457,8 @@ export default async function EmployeeDashboardPage(props: {
                               currentStatus={proc.status}
                               processName={proc.name}
                               prominent={proc.status === "IN_PROGRESS" || proc.status === "DELAYED"}
+                              locked={processLocked}
+                              lockReason={lockReason}
                             />
                             <ProcessNoteCell processId={proc.id} notes={(proc as any).notes || []} />
                           </div>
@@ -445,7 +474,8 @@ export default async function EmployeeDashboardPage(props: {
                           </div>
                         )}
                       </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>

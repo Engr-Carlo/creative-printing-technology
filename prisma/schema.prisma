@@ -110,6 +110,7 @@ model Item {
   type          ItemType
   quantity      Int
   color         String?
+  machines      String?
   customer      String
   targetOutput  Int
   currentOutput Int               @default(0)
