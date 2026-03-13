@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Package, Clock, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
+import { RawMaterialsSelect } from "@/components/RawMaterialsSelect";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-800" },
@@ -133,12 +134,10 @@ export default async function DashboardPage() {
                           <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${statusCfg.color}`}>{statusCfg.label}</span>
                         </td>
                         <td className="py-1.5 px-3">
-                          <span className={`text-[10px] font-medium ${
-                            item.rawMaterials === "RELEASE_TO_PRODUCTION" ? "text-green-600" :
-                            item.rawMaterials === "APPROVAL" ? "text-yellow-600" : "text-red-500"
-                          }`}>
-                            {item.rawMaterials === "RELEASE_TO_PRODUCTION" ? "✓ Released" : item.rawMaterials === "APPROVAL" ? "⏳ Approval" : "✗ N/A"}
-                          </span>
+                          <RawMaterialsSelect
+                            itemId={item.id}
+                            currentStatus={item.rawMaterials}
+                          />
                         </td>
                         <td className="py-1.5 px-3">
                           <div className="flex items-center gap-2">

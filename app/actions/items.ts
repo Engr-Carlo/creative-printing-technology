@@ -43,7 +43,7 @@ export async function quickGenerateItem(data: {
 
     const rawMaterials = data.rawMaterials && ["APPROVAL", "RELEASE_TO_PRODUCTION", "NOT_AVAILABLE"].includes(data.rawMaterials)
       ? data.rawMaterials
-      : "NOT_AVAILABLE";
+      : "APPROVAL";
 
     const item = await prisma.item.create({
       data: {

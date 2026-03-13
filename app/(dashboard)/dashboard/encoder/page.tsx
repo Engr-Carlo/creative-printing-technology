@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
-import { RawMaterialsSelect } from "@/components/RawMaterialsSelect";
+
 import { ProductionTrendChart } from "@/components/charts/ProductionTrendChart";
 import { ItemDistributionChart } from "@/components/charts/ItemDistributionChart";
 import ItemNoteCell from "@/components/ItemNoteCell";
@@ -70,11 +70,6 @@ async function getItemsByDepartment(departmentType: string) {
       createdAt: true,
       department: {
         select: { name: true },
-      },
-      assignments: {
-        select: {
-          user: { select: { id: true } },
-        },
       },
       notes: {
         select: {
@@ -377,10 +372,13 @@ export default async function EncoderDashboardPage({
                               </span>
                             </td>
                             <td className="py-1.5 px-2">
-                              <RawMaterialsSelect
-                                itemId={item.id}
-                                currentStatus={item.rawMaterials}
-                              />
+                              <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border ${
+                                item.rawMaterials === "RELEASE_TO_PRODUCTION" ? "bg-green-100 text-green-700 border-green-300" :
+                                item.rawMaterials === "APPROVAL" ? "bg-yellow-100 text-yellow-700 border-yellow-300" :
+                                "bg-red-100 text-red-700 border-red-300"
+                              }`}>
+                                {item.rawMaterials === "RELEASE_TO_PRODUCTION" ? "Released" : item.rawMaterials === "APPROVAL" ? "For Approval" : "Not Available"}
+                              </span>
                             </td>
                             <td className="py-1.5 px-2">
                               <span

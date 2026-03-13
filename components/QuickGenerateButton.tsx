@@ -31,7 +31,6 @@ export function QuickGenerateButton() {
     quantity: "1",
     targetOutput: "0",
     color: "",
-    rawMaterials: "NOT_AVAILABLE",
     deadline: defaultDeadline,
     machines: [] as string[],
   });
@@ -40,7 +39,7 @@ export function QuickGenerateButton() {
     setOpen(true);
     setGenerated(null);
     setError(null);
-    setForm({ type: "SHEETED", name: "", customer: "", quantity: "1", targetOutput: "0", color: "", rawMaterials: "NOT_AVAILABLE", deadline: defaultDeadline, machines: [] });
+    setForm({ type: "SHEETED", name: "", customer: "", quantity: "1", targetOutput: "0", color: "", deadline: defaultDeadline, machines: [] });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -55,7 +54,7 @@ export function QuickGenerateButton() {
         quantity: parseInt(form.quantity) || 1,
         targetOutput: parseInt(form.targetOutput) || 0,
         color: form.color || undefined,
-        rawMaterials: form.rawMaterials,
+        rawMaterials: "APPROVAL",
         deadline: form.deadline || undefined,
         machines: form.machines.length > 0 ? form.machines.join(", ") : undefined,
       });
@@ -92,7 +91,7 @@ export function QuickGenerateButton() {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-orange-500" />
@@ -117,7 +116,7 @@ export function QuickGenerateButton() {
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
               {/* Type Selection */}
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase text-gray-500">Item Type *</Label>
@@ -225,29 +224,14 @@ export function QuickGenerateButton() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label htmlFor="gen-raw" className="text-xs font-bold uppercase text-gray-500">Raw Materials</Label>
-                  <select
-                    id="gen-raw"
-                    value={form.rawMaterials}
-                    onChange={(e) => setForm((f) => ({ ...f, rawMaterials: e.target.value }))}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  >
-                    <option value="NOT_AVAILABLE">Not Available</option>
-                    <option value="APPROVAL">For Approval</option>
-                    <option value="RELEASE_TO_PRODUCTION">Released to Production</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="gen-deadline" className="text-xs font-bold uppercase text-gray-500">Deadline</Label>
-                  <Input
-                    id="gen-deadline"
-                    type="date"
-                    value={form.deadline}
-                    onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))}
-                  />
-                </div>
+              <div className="space-y-1">
+                <Label htmlFor="gen-deadline" className="text-xs font-bold uppercase text-gray-500">Deadline</Label>
+                <Input
+                  id="gen-deadline"
+                  type="date"
+                  value={form.deadline}
+                  onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))}
+                />
               </div>
 
               {error && (
