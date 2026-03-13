@@ -144,7 +144,7 @@ export default async function ItemDetailPage({
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Raw Materials</p>
                 <div className="mt-1">
-                  {session.user.role === "ADMIN" || session.user.role === "ENCODER" ? (
+                  {session.user.role === "ADMIN" ? (
                     <RawMaterialsSelect itemId={item.id} currentStatus={(item as any).rawMaterials || "SHORT"} />
                   ) : (
                     <RawMaterialsBadge status={(item as any).rawMaterials || "SHORT"} />

@@ -160,7 +160,7 @@ export async function deleteItem(itemId: string) {
 
 export async function updateRawMaterials(itemId: string, rawMaterials: string) {
   const session = await auth();
-  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "ENCODER")) {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return { error: "Unauthorized" };
   }
 
