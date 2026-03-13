@@ -20,7 +20,7 @@ async function getItems() {
       targetOutput: true,
       rawMaterials: true,
       department: { select: { name: true } },
-      _count: { select: { processes: true } },
+      processes: { select: { status: true } },
     },
     orderBy: { createdAt: "desc" },
     take: 100,
@@ -105,8 +105,10 @@ export default async function ItemsPage() {
                   items.map((item) => {
                     const config = statusConfig[item.status as keyof typeof statusConfig];
                     const StatusIcon = config?.icon || Clock;
-                    const progress = item.targetOutput > 0 
-                      ? Math.round((item.currentOutput / item.targetOutput) * 100)
+                    const totalProcesses = item.processes.length;
+                    const completedProcesses = item.processes.filter(p => p.status === "COMPLETED").length;
+                    const progress = totalProcesses > 0
+                      ? Math.round((completedProcesses / totalProcesses) * 100)
                       : 0;
 
                     return (
@@ -140,7 +142,7 @@ export default async function ItemsPage() {
                           </span>
                         </td>
                         <td className="py-1.5 px-2 text-center">
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">{item._count.processes}</span>
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">{totalProcesses}</span>
                         </td>
                         <td className="py-1.5 px-2">
                           <Link href={`/dashboard/items/${item.id}`}>
