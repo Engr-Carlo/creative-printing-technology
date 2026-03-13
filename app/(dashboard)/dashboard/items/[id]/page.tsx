@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
- import { ArrowLeft, Package, Clock, CheckCircle2, XCircle, AlertCircle, Calendar, User, Building2, BoxIcon } from "lucide-react";
+ import { ArrowLeft, Package, Clock, CheckCircle2, XCircle, AlertCircle, Calendar, Building2, BoxIcon } from "lucide-react";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { RawMaterialsSelect, RawMaterialsBadge } from "@/components/RawMaterialsSelect";
@@ -32,6 +32,7 @@ const statusConfig = {
   PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-800 border-yellow-300", icon: Clock },
   IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-800 border-blue-300", icon: AlertCircle },
   COMPLETED: { label: "Completed", color: "bg-green-100 text-green-800 border-green-300", icon: CheckCircle2 },
+  REJECTED: { label: "Rejected", color: "bg-red-100 text-red-800 border-red-300", icon: XCircle },
 };
 
 const processStatusConfig = {
@@ -114,9 +115,9 @@ export default async function ItemDetailPage({
         </CardContent></Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3">
         {/* Item Details */}
-        <Card className="border lg:col-span-2">
+        <Card className="border">
           <CardHeader>
             <CardTitle>Item Details</CardTitle>
             <CardDescription>Complete information about this item</CardDescription>
@@ -181,43 +182,6 @@ export default async function ItemDetailPage({
           </CardContent>
         </Card>
 
-        {/* Assigned Users */}
-        <Card className="border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5 text-primary" />
-              Assigned Users
-            </CardTitle>
-            <CardDescription>
-              {item.assignments.length} {item.assignments.length === 1 ? "user" : "users"} assigned
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {item.assignments.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <User className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                <p className="text-sm">No users assigned yet</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {item.assignments.map((assignment) => (
-                  <div
-                    key={assignment.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border-2 hover:border-primary/50 transition-colors"
-                  >
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary to-orange-600 rounded-full flex items-center justify-center text-white font-bold">
-                      {assignment.user.name?.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm">{assignment.user.name}</p>
-                      <p className="text-xs text-muted-foreground">{assignment.user.role}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       {/* Processes */}
@@ -243,7 +207,6 @@ export default async function ItemDetailPage({
                     <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">#</th>
                     <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">Process</th>
                     <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">Machine</th>
-                    <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">Assigned To</th>
                     <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">Status</th>
                   </tr>
                 </thead>
@@ -269,7 +232,6 @@ export default async function ItemDetailPage({
                         </td>
                         <td className="py-2.5 px-3 font-semibold text-gray-900">{process.name}</td>
                         <td className="py-2.5 px-3 text-gray-600">{process.machine?.name || <span className="text-gray-300">—</span>}</td>
-                        <td className="py-2.5 px-3 text-gray-600">{process.assignedTo?.name || <span className="text-gray-300">—</span>}</td>
                         <td className="py-2.5 px-3">
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${pConfig?.color}`}>
                             <PStatusIcon className="w-3 h-3" />
