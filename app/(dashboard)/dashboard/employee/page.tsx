@@ -277,7 +277,7 @@ export default async function EmployeeDashboardPage(props: {
                   <span><strong>Type:</strong> {TYPE_LABELS[selectedItem.type] || selectedItem.type}</span>
                   <span><strong>Deadline:</strong> {new Date(selectedItem.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                   {selectedItem.color && <span><strong>Color:</strong> {selectedItem.color}</span>}
-                  <span><strong>Raw Materials:</strong> {selectedItem.rawMaterials === "AVAILABLE" ? "✓ Available" : "✗ Not Available"}</span>
+                  <span><strong>Raw Materials:</strong> {selectedItem.rawMaterials === "RELEASE_TO_PRODUCTION" ? "✓ Released to Production" : selectedItem.rawMaterials === "APPROVAL" ? "⏳ For Approval" : "✗ Not Available"}</span>
                 </div>
 
                 {/* Progress Bar */}

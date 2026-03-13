@@ -205,7 +205,8 @@ export function QuickGenerateButton() {
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
                     <option value="NOT_AVAILABLE">Not Available</option>
-                    <option value="AVAILABLE">Available</option>
+                    <option value="APPROVAL">For Approval</option>
+                    <option value="RELEASE_TO_PRODUCTION">Released to Production</option>
                   </select>
                 </div>
                 <div className="space-y-1">
