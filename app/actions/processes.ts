@@ -51,6 +51,9 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
       });
     }
 
+    let itemCompleted = false;
+    let itemRejected = false;
+
     if (newStatus === "COMPLETED") {
       const siblings = await prisma.process.findMany({
         where: { itemId: process.itemId },
@@ -61,6 +64,7 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
           where: { id: process.itemId },
           data: { status: "COMPLETED" },
         });
+        itemCompleted = true;
       }
     }
 
@@ -69,6 +73,7 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
         where: { id: process.itemId },
         data: { status: "REJECTED" },
       });
+      itemRejected = true;
     }
 
     revalidatePath("/dashboard/my-processes");
@@ -76,7 +81,7 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
     revalidatePath("/dashboard/my-items");
     revalidatePath("/dashboard/encoder");
     revalidatePath(`/dashboard/items/${process.itemId}`);
-    return { success: true, process: updatedProcess };
+    return { success: true, process: updatedProcess, itemCompleted, itemRejected };
   } catch (error) {
     console.error("Error updating process status:", error);
     return { error: "Failed to update process status" };

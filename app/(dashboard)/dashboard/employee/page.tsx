@@ -87,7 +87,7 @@ async function getLineLeaderData() {
 }
 
 export default async function EmployeeDashboardPage(props: {
-  searchParams: Promise<{ item?: string; showCompleted?: string; showRejected?: string }>;
+  searchParams: Promise<{ item?: string; tab?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
@@ -97,8 +97,7 @@ export default async function EmployeeDashboardPage(props: {
 
   const searchParams = await props.searchParams;
   const selectedItemId = searchParams.item;
-  const showCompleted = searchParams.showCompleted === "1";
-  const showRejected = searchParams.showRejected === "1";
+  const activeTab = searchParams.tab || "active";
 
   const { activeItems, completedItems, rejectedItems, deptName } = await getLineLeaderData();
   const allItems = [...activeItems, ...completedItems, ...rejectedItems];
@@ -143,149 +142,160 @@ export default async function EmployeeDashboardPage(props: {
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar — Item List */}
         <div className="w-72 flex-shrink-0 border-r bg-white flex flex-col overflow-hidden">
-          {/* Active Items Header */}
-          <div className="px-3 py-2 bg-gray-50 border-b">
-            <p className="text-[10px] font-bold text-gray-500 uppercase">Active Items ({activeItems.length})</p>
+          {/* Tab Buttons */}
+          <div className="flex border-b text-[11px] font-bold">
+            <Link
+              href="/dashboard/employee?tab=active"
+              className={`flex-1 py-2 px-1 text-center transition-colors ${
+                activeTab === "active" ? "bg-orange-500 text-white" : "text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              Active ({activeItems.length})
+            </Link>
+            <Link
+              href="/dashboard/employee?tab=completed"
+              className={`flex-1 py-2 px-1 text-center transition-colors border-l ${
+                activeTab === "completed" ? "bg-green-600 text-white" : "text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              Done ({completedItems.length})
+            </Link>
+            <Link
+              href="/dashboard/employee?tab=rejected"
+              className={`flex-1 py-2 px-1 text-center transition-colors border-l ${
+                activeTab === "rejected" ? "bg-red-600 text-white" : "text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              Rejected ({rejectedItems.length})
+            </Link>
           </div>
 
-          {/* Active Items List */}
+          {/* Items List */}
           <div className="flex-1 overflow-y-auto">
-            {activeItems.length === 0 ? (
-              <div className="p-4 text-center text-xs text-gray-400">
-                <Package className="w-6 h-6 mx-auto mb-1 text-gray-300" />
-                No active items
-              </div>
-            ) : (
-              activeItems.map((item) => {
-                const isSelected = selectedItemId === item.id;
-                const badge = TYPE_BADGE[item.type] || { label: "?", color: "bg-gray-400 text-white" };
-                const doneProc = item.processes.filter((p) => p.status === "COMPLETED").length;
-                const totalProc = item.processes.length;
-                return (
-                  <Link
-                    key={item.id}
-                    href={isSelected ? "/dashboard/employee" : `/dashboard/employee?item=${item.id}${showCompleted ? "&showCompleted=1" : ""}`}
-                  >
-                    <div className={`px-3 py-2.5 border-b cursor-pointer transition-all ${
-                      isSelected ? "bg-orange-50 border-l-4 border-l-orange-500" : "hover:bg-gray-50 border-l-4 border-l-transparent"
-                    }`}>
-                      <div className="flex items-center gap-2">
-                        <span className={`flex-shrink-0 w-6 h-6 rounded text-[10px] font-bold flex items-center justify-center ${badge.color}`}>
-                          {badge.label}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono text-[11px] font-bold text-blue-600">{item.itemNumber}</span>
-                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                              item.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"
-                            }`}>{item.status.replace(/_/g, " ")}</span>
-                          </div>
-                          <p className="text-[11px] text-gray-600 truncate">{item.name}</p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-[10px] text-gray-400">{doneProc}/{totalProc}</p>
-                          <ChevronRight className={`w-3 h-3 text-gray-300 ${isSelected ? "text-orange-500" : ""}`} />
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })
-            )}
-
-            {/* Completed Section */}
-            {completedItems.length > 0 && (
+            {activeTab === "active" && (
               <>
-                <Link href={showCompleted
-                  ? `/dashboard/employee${selectedItemId ? `?item=${selectedItemId}` : ""}${showRejected ? (selectedItemId ? "&showRejected=1" : "?showRejected=1") : ""}`
-                  : `/dashboard/employee?showCompleted=1${selectedItemId ? `&item=${selectedItemId}` : ""}${showRejected ? "&showRejected=1" : ""}`
-                }>
-                  <div className="px-3 py-2 bg-green-50 border-b border-t cursor-pointer hover:bg-green-100 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-bold text-green-700 uppercase flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Completed ({completedItems.length})
-                      </p>
-                      <span className="text-[10px] text-green-600">{showCompleted ? "▾ Hide" : "▸ Show"}</span>
-                    </div>
+                {activeItems.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-gray-400">
+                    <Package className="w-6 h-6 mx-auto mb-1 text-gray-300" />
+                    No active items
                   </div>
-                </Link>
-                {showCompleted && completedItems.map((item) => {
-                  const isSelected = selectedItemId === item.id;
-                  const badge = TYPE_BADGE[item.type] || { label: "?", color: "bg-gray-400 text-white" };
-                  return (
-                    <Link
-                      key={item.id}
-                      href={isSelected ? `/dashboard/employee?showCompleted=1${showRejected ? "&showRejected=1" : ""}` : `/dashboard/employee?item=${item.id}&showCompleted=1${showRejected ? "&showRejected=1" : ""}`}
-                    >
-                      <div className={`px-3 py-2 border-b cursor-pointer transition-all ${
-                        isSelected ? "bg-green-50 border-l-4 border-l-green-500" : "hover:bg-gray-50 border-l-4 border-l-transparent"
-                      }`}>
-                        <div className="flex items-center gap-2">
-                          <span className={`flex-shrink-0 w-6 h-6 rounded text-[10px] font-bold flex items-center justify-center ${badge.color} opacity-60`}>
-                            {badge.label}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono text-[11px] font-bold text-gray-400">{item.itemNumber}</span>
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-100 text-green-700">COMPLETED</span>
+                ) : (
+                  activeItems.map((item) => {
+                    const isSelected = selectedItemId === item.id;
+                    const badge = TYPE_BADGE[item.type] || { label: "?", color: "bg-gray-400 text-white" };
+                    const doneProc = item.processes.filter((p) => p.status === "COMPLETED").length;
+                    const totalProc = item.processes.length;
+                    return (
+                      <Link
+                        key={item.id}
+                        href={isSelected ? "/dashboard/employee?tab=active" : `/dashboard/employee?tab=active&item=${item.id}`}
+                      >
+                        <div className={`px-3 py-2.5 border-b cursor-pointer transition-all ${
+                          isSelected ? "bg-orange-50 border-l-4 border-l-orange-500" : "hover:bg-gray-50 border-l-4 border-l-transparent"
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <span className={`flex-shrink-0 w-6 h-6 rounded text-[10px] font-bold flex items-center justify-center ${badge.color}`}>
+                              {badge.label}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-[11px] font-bold text-blue-600">{item.itemNumber}</span>
+                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                  item.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"
+                                }`}>{item.status.replace(/_/g, " ")}</span>
+                              </div>
+                              <p className="text-[11px] text-gray-600 truncate">{item.name}</p>
                             </div>
-                            <p className="text-[11px] text-gray-400 truncate">{item.name}</p>
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-[10px] text-gray-400">{doneProc}/{totalProc}</p>
+                              <ChevronRight className={`w-3 h-3 text-gray-300 ${isSelected ? "text-orange-500" : ""}`} />
+                            </div>
                           </div>
-                          <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                         </div>
-                      </div>
-                    </Link>
-                  );
-                })}
+                      </Link>
+                    );
+                  })
+                )}
               </>
             )}
 
-            {/* Rejected Section */}
-            {rejectedItems.length > 0 && (
+            {activeTab === "completed" && (
               <>
-                <Link href={showRejected
-                  ? `/dashboard/employee${selectedItemId ? `?item=${selectedItemId}` : ""}${showCompleted ? (selectedItemId ? "&showCompleted=1" : "?showCompleted=1") : ""}`
-                  : `/dashboard/employee?showRejected=1${selectedItemId ? `&item=${selectedItemId}` : ""}${showCompleted ? "&showCompleted=1" : ""}`
-                }>
-                  <div className="px-3 py-2 bg-red-50 border-b border-t cursor-pointer hover:bg-red-100 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-bold text-red-700 uppercase flex items-center gap-1">
-                        <span className="w-3 h-3 inline-flex items-center justify-center">✕</span>
-                        Rejected ({rejectedItems.length})
-                      </p>
-                      <span className="text-[10px] text-red-600">{showRejected ? "▾ Hide" : "▸ Show"}</span>
-                    </div>
+                {completedItems.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-gray-400">
+                    <CheckCircle2 className="w-6 h-6 mx-auto mb-1 text-gray-300" />
+                    No completed items
                   </div>
-                </Link>
-                {showRejected && rejectedItems.map((item) => {
-                  const isSelected = selectedItemId === item.id;
-                  const badge = TYPE_BADGE[item.type] || { label: "?", color: "bg-gray-400 text-white" };
-                  return (
-                    <Link
-                      key={item.id}
-                      href={isSelected ? `/dashboard/employee?showRejected=1${showCompleted ? "&showCompleted=1" : ""}` : `/dashboard/employee?item=${item.id}&showRejected=1${showCompleted ? "&showCompleted=1" : ""}`}
-                    >
-                      <div className={`px-3 py-2 border-b cursor-pointer transition-all ${
-                        isSelected ? "bg-red-50 border-l-4 border-l-red-500" : "hover:bg-gray-50 border-l-4 border-l-transparent"
-                      }`}>
-                        <div className="flex items-center gap-2">
-                          <span className={`flex-shrink-0 w-6 h-6 rounded text-[10px] font-bold flex items-center justify-center ${badge.color} opacity-60`}>
-                            {badge.label}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono text-[11px] font-bold text-gray-400">{item.itemNumber}</span>
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-700">REJECTED</span>
+                ) : (
+                  completedItems.map((item) => {
+                    const isSelected = selectedItemId === item.id;
+                    const badge = TYPE_BADGE[item.type] || { label: "?", color: "bg-gray-400 text-white" };
+                    return (
+                      <Link
+                        key={item.id}
+                        href={isSelected ? "/dashboard/employee?tab=completed" : `/dashboard/employee?tab=completed&item=${item.id}`}
+                      >
+                        <div className={`px-3 py-2 border-b cursor-pointer transition-all ${
+                          isSelected ? "bg-green-50 border-l-4 border-l-green-500" : "hover:bg-gray-50 border-l-4 border-l-transparent"
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <span className={`flex-shrink-0 w-6 h-6 rounded text-[10px] font-bold flex items-center justify-center ${badge.color} opacity-60`}>
+                              {badge.label}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-[11px] font-bold text-gray-400">{item.itemNumber}</span>
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-100 text-green-700">COMPLETED</span>
+                              </div>
+                              <p className="text-[11px] text-gray-400 truncate">{item.name}</p>
                             </div>
-                            <p className="text-[11px] text-gray-400 truncate">{item.name}</p>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                           </div>
-                          <span className="text-red-400 text-xs flex-shrink-0">✕</span>
                         </div>
-                      </div>
-                    </Link>
-                  );
-                })}
+                      </Link>
+                    );
+                  })
+                )}
+              </>
+            )}
+
+            {activeTab === "rejected" && (
+              <>
+                {rejectedItems.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-gray-400">
+                    <Package className="w-6 h-6 mx-auto mb-1 text-gray-300" />
+                    No rejected items
+                  </div>
+                ) : (
+                  rejectedItems.map((item) => {
+                    const isSelected = selectedItemId === item.id;
+                    const badge = TYPE_BADGE[item.type] || { label: "?", color: "bg-gray-400 text-white" };
+                    return (
+                      <Link
+                        key={item.id}
+                        href={isSelected ? "/dashboard/employee?tab=rejected" : `/dashboard/employee?tab=rejected&item=${item.id}`}
+                      >
+                        <div className={`px-3 py-2 border-b cursor-pointer transition-all ${
+                          isSelected ? "bg-red-50 border-l-4 border-l-red-500" : "hover:bg-gray-50 border-l-4 border-l-transparent"
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <span className={`flex-shrink-0 w-6 h-6 rounded text-[10px] font-bold flex items-center justify-center ${badge.color} opacity-60`}>
+                              {badge.label}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-[11px] font-bold text-gray-400">{item.itemNumber}</span>
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-700">REJECTED</span>
+                              </div>
+                              <p className="text-[11px] text-gray-400 truncate">{item.name}</p>
+                            </div>
+                            <span className="text-red-400 text-xs flex-shrink-0">✕</span>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })
+                )}
               </>
             )}
           </div>
