@@ -2,10 +2,12 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
- import { ArrowLeft, Package, Clock, CheckCircle2, XCircle, AlertCircle, Calendar, Building2, BoxIcon } from "lucide-react";
+ import { ArrowLeft, Package, Clock, CheckCircle2, XCircle, AlertCircle, Calendar, Building2, BoxIcon, PackageCheck } from "lucide-react";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { RawMaterialsSelect, RawMaterialsBadge } from "@/components/RawMaterialsSelect";
+import { ItemMaterialsCard } from "@/components/inventory/ItemMaterialsCard";
+import { getInventoryItems, getItemMaterials } from "@/app/actions/inventory";
 
 async function getItem(id: string) {
   return prisma.item.findUnique({
@@ -54,7 +56,11 @@ export default async function ItemDetailPage({
   }
 
   const { id } = await params;
-  const item = await getItem(id);
+  const [item, materialUsages, inventoryItems] = await Promise.all([
+    getItem(id),
+    getItemMaterials(id),
+    getInventoryItems(),
+  ]);
   
   if (!item) {
     notFound();
@@ -189,6 +195,28 @@ export default async function ItemDetailPage({
         </Card>
 
       </div>
+
+      {/* Material Requirements */}
+      <Card className="border">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <PackageCheck className="w-4 h-4 text-orange-500" />
+            Material Requirements
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Raw materials needed for this job — linked to inventory
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ItemMaterialsCard
+            itemId={item.id}
+            initialUsages={materialUsages as any}
+            inventoryOptions={inventoryItems as any}
+            rawMaterials={(item as any).rawMaterials ?? "AVAILABLE"}
+            isAdmin={session.user.role === "ADMIN"}
+          />
+        </CardContent>
+      </Card>
 
       {/* Processes */}
       <Card className="border">

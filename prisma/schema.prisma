@@ -79,10 +79,11 @@ model User {
   department    Department? @relation(fields: [departmentId], references: [id])
   
   // Relations
-  assignedItems    ItemAssignment[]
-  assignedProcesses Process[] @relation("ProcessAssignee")
-  processUpdates   ProcessUpdate[]
-  notes            Note[]
+  assignedItems        ItemAssignment[]
+  assignedProcesses    Process[] @relation("ProcessAssignee")
+  processUpdates       ProcessUpdate[]
+  notes                Note[]
+  inventoryTransactions InventoryTransaction[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -126,13 +127,14 @@ model Item {
   department   Department @relation(fields: [departmentId], references: [id])
   
   // Relations
-  processes   Process[]
-  assignments ItemAssignment[]
-  notes       Note[]
+  processes        Process[]
+  assignments      ItemAssignment[]
+  notes            Note[]
+  materialUsages   ItemMaterialUsage[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([departmentId, status])
   @@index([deadline])
   @@index([customer])
@@ -254,4 +256,55 @@ model Note {
   
   @@index([itemId, createdAt])
   @@index([processId, createdAt])
+}
+
+// ─── Inventory ────────────────────────────────────────────────
+
+model InventoryItem {
+  id           String  @id @default(cuid())
+  name         String
+  description  String?
+  unit         String  // "reams", "sheets", "kg", "liters", etc.
+  currentStock Float   @default(0)
+  minStock     Float   @default(0) // threshold for NOT_SUFFICIENT warning
+
+  usages       ItemMaterialUsage[]
+  transactions InventoryTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+}
+
+model ItemMaterialUsage {
+  id          String @id @default(cuid())
+  requiredQty Float
+
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  inventoryItemId String
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, inventoryItemId])
+  @@index([inventoryItemId])
+}
+
+model InventoryTransaction {
+  id       String  @id @default(cuid())
+  type     String  // "RESTOCK" | "DEDUCT" | "ADJUSTMENT"
+  quantity Float
+  note     String?
+
+  inventoryItemId String
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  performedById String
+  performedBy   User   @relation(fields: [performedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([inventoryItemId, createdAt])
+  @@index([performedById])
 }

@@ -10,6 +10,7 @@ import {
   BarChart3,
   Users,
   Building2,
+  Boxes,
 } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -24,6 +25,7 @@ const navigation = [
   // Admin navigation
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN"] },
   { name: "Items", href: "/dashboard/items", icon: Package, roles: ["ADMIN"] },
+  { name: "Inventory", href: "/dashboard/inventory", icon: Boxes, roles: ["ADMIN"] },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["ADMIN"] },
   { name: "Users", href: "/dashboard/users", icon: Users, roles: ["ADMIN"] },
   
