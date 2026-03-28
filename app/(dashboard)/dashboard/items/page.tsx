@@ -1,12 +1,9 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Package, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { Package, Clock, CheckCircle2, AlertCircle, FolderOpen } from "lucide-react";
 import prisma from "@/lib/prisma";
-import Link from "next/link";
-import { RawMaterialsSelect, RawMaterialsBadge } from "@/components/RawMaterialsSelect";
 import { QuickGenerateButton } from "@/components/QuickGenerateButton";
+import { ItemsClient } from "@/components/ItemsClient";
 
 async function getItems() {
   return prisma.item.findMany({
@@ -27,137 +24,60 @@ async function getItems() {
   });
 }
 
-const statusConfig = {
-  PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-800 border-yellow-300", icon: Clock },
-  IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-800 border-blue-300", icon: AlertCircle },
-  COMPLETED: { label: "Completed", color: "bg-green-100 text-green-800 border-green-300", icon: CheckCircle2 },
-};
-
 export default async function ItemsPage() {
   const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
+  if (!session?.user) redirect("/login");
 
-  // Only Admin and Encoder can access this page
   if (session.user.role !== "ADMIN" && session.user.role !== "ENCODER") {
     redirect("/dashboard");
   }
 
   const items = await getItems();
+  const isAdmin = session.user.role === "ADMIN";
+
+  const pending    = items.filter((i) => i.status === "PENDING").length;
+  const inProgress = items.filter((i) => i.status === "IN_PROGRESS").length;
+  const completed  = items.filter((i) => i.status === "COMPLETED").length;
+  const rejected   = items.filter((i) => (i as any).status === "REJECTED").length;
 
   return (
-    <div className="space-y-3 p-2">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-gray-900">Items Management</h1>
-          <p className="text-xs text-muted-foreground">Manage production items</p>
-        </div>
-        <QuickGenerateButton />
-      </div>
+    <div className="min-h-full bg-gray-50">
 
-      {/* Compact Stats */}
-      <div className="grid grid-cols-4 gap-2">
-        <Card className="border"><CardContent className="p-2">
-          <p className="text-[10px] text-muted-foreground">Total</p>
-          <p className="text-lg font-bold">{items.length}</p>
-        </CardContent></Card>
-        <Card className="border"><CardContent className="p-2">
-          <p className="text-[10px] text-muted-foreground">Pending</p>
-          <p className="text-lg font-bold text-yellow-600">{items.filter((i) => i.status === "PENDING").length}</p>
-        </CardContent></Card>
-        <Card className="border"><CardContent className="p-2">
-          <p className="text-[10px] text-muted-foreground">In Progress</p>
-          <p className="text-lg font-bold text-blue-600">{items.filter((i) => i.status === "IN_PROGRESS").length}</p>
-        </CardContent></Card>
-        <Card className="border"><CardContent className="p-2">
-          <p className="text-[10px] text-muted-foreground">Completed</p>
-          <p className="text-lg font-bold text-green-600">{items.filter((i) => i.status === "COMPLETED").length}</p>
-        </CardContent></Card>
-      </div>
-
-      {/* Items Table */}
-      <Card className="border">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
-            <table className="w-full text-[11px]">
-              <thead className="sticky top-0 bg-white z-10">
-                <tr className="border-b bg-muted/30">
-                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Item #</th>
-                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Name</th>
-                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Type</th>
-                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Dept</th>
-                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Output</th>
-                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Progress</th>
-                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Raw Mat.</th>
-                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Status</th>
-                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Proc.</th>
-                  <th className="text-left py-1.5 px-2 font-semibold text-muted-foreground">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} className="text-center py-8 text-muted-foreground text-xs">No items found</td>
-                  </tr>
-                ) : (
-                  items.map((item) => {
-                    const config = statusConfig[item.status as keyof typeof statusConfig];
-                    const StatusIcon = config?.icon || Clock;
-                    const totalProcesses = item.processes.length;
-                    const completedProcesses = item.processes.filter(p => p.status === "COMPLETED").length;
-                    const progress = totalProcesses > 0
-                      ? Math.round((completedProcesses / totalProcesses) * 100)
-                      : 0;
-
-                    return (
-                      <tr key={item.id} className="border-b hover:bg-muted/20">
-                        <td className="py-1.5 px-2 font-mono font-semibold text-blue-600">{item.itemNumber}</td>
-                        <td className="py-1.5 px-2 font-medium">{item.name}</td>
-                        <td className="py-1.5 px-2 text-muted-foreground">{item.type}</td>
-                        <td className="py-1.5 px-2"><span className="bg-gray-100 px-1.5 py-0.5 rounded text-[10px]">{item.department.name}</span></td>
-                        <td className="py-1.5 px-2">
-                          <span className="font-semibold">{item.currentOutput}</span>
-                          <span className="text-muted-foreground">/{item.targetOutput}</span>
-                        </td>
-                        <td className="py-1.5 px-2">
-                          <div className="flex items-center gap-1">
-                            <div className="flex-1 bg-gray-200 rounded-full h-1.5 max-w-[60px]">
-                              <div className="bg-primary h-1.5 rounded-full" style={{ width: `${Math.min(progress, 100)}%` }} />
-                            </div>
-                            <span className="text-[10px] font-semibold text-muted-foreground">{progress}%</span>
-                          </div>
-                        </td>
-                        <td className="py-1.5 px-2">
-                          {session.user.role === "ADMIN" ? (
-                            <RawMaterialsSelect itemId={item.id} currentStatus={(item as any).rawMaterials || "AVAILABLE"} />
-                            ) : (
-                            <RawMaterialsBadge status={(item as any).rawMaterials || "AVAILABLE"} />
-                          )}
-                        </td>
-                        <td className="py-1.5 px-2">
-                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold border ${config?.color}`}>
-                            <StatusIcon className="w-2.5 h-2.5" />{config?.label}
-                          </span>
-                        </td>
-                        <td className="py-1.5 px-2 text-center">
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">{totalProcesses}</span>
-                        </td>
-                        <td className="py-1.5 px-2">
-                          <Link href={`/dashboard/items/${item.id}`}>
-                            <Button variant="outline" size="sm" className="h-5 text-[10px] px-2">View</Button>
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+      {/* ── Management Header ── */}
+      <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white px-5 py-5">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-300">Item Management</p>
+            <h1 className="text-xl font-black mt-0.5 flex items-center gap-2">
+              <FolderOpen className="w-5 h-5" />
+              Items Workspace
+            </h1>
+            <p className="text-xs text-indigo-300 mt-0.5">Create, search, filter and manage all production jobs</p>
           </div>
-        </CardContent>
-      </Card>
+          <QuickGenerateButton />
+        </div>
+
+        {/* Quick stats */}
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { label: "Pending",     value: pending,    num: "text-yellow-300", bg: "bg-yellow-500/20 border-yellow-400/30" },
+            { label: "In Progress", value: inProgress, num: "text-orange-300", bg: "bg-orange-500/20 border-orange-400/30" },
+            { label: "Completed",   value: completed,  num: "text-green-300",  bg: "bg-green-500/20  border-green-400/30"  },
+            { label: "Rejected",    value: rejected,   num: "text-red-300",    bg: "bg-red-500/20    border-red-400/30"    },
+          ].map((s) => (
+            <div key={s.label} className={`rounded-xl border px-3 py-2 ${s.bg}`}>
+              <p className="text-[9px] uppercase tracking-widest text-indigo-300 font-bold">{s.label}</p>
+              <p className={`text-xl font-black ${s.num}`}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Client-side search + filter + table ── */}
+      <div className="p-4">
+        <ItemsClient items={items as any} isAdmin={isAdmin} />
+      </div>
+
     </div>
   );
 }
