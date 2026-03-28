@@ -165,7 +165,7 @@ async function main() {
       currentOutput: 1200,
       deadline: new Date('2026-02-10'),
       status: ItemStatus.IN_PROGRESS,
-      rawMaterials: RawMaterialStatus.APPROVAL,
+      rawMaterials: RawMaterialStatus.AVAILABLE,
       departmentId: manual.id,
     },
   });
@@ -184,7 +184,7 @@ async function main() {
       currentOutput: 0,
       deadline: new Date('2026-02-20'),
       status: ItemStatus.PENDING,
-      rawMaterials: RawMaterialStatus.NOT_AVAILABLE,
+      rawMaterials: RawMaterialStatus.NOT_SUFFICIENT,
       departmentId: manual.id,
     },
   });

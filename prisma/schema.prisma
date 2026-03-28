@@ -33,8 +33,12 @@ enum ItemType {
 }
 
 enum RawMaterialStatus {
-  APPROVAL
+  AVAILABLE
+  NOT_SUFFICIENT
   RELEASE_TO_PRODUCTION
+  OUT_OF_STOCK
+  // Legacy values kept for safe migration — do not use in new code
+  APPROVAL
   NOT_AVAILABLE
 }
 

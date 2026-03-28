@@ -152,9 +152,9 @@ export default async function ItemDetailPage({
                 <p className="text-sm font-medium text-muted-foreground">Raw Materials</p>
                 <div className="mt-1">
                   {session.user.role === "ADMIN" ? (
-                    <RawMaterialsSelect itemId={item.id} currentStatus={(item as any).rawMaterials || "SHORT"} />
+                    <RawMaterialsSelect itemId={item.id} currentStatus={(item as any).rawMaterials || "AVAILABLE"} />
                   ) : (
-                    <RawMaterialsBadge status={(item as any).rawMaterials || "SHORT"} />
+                    <RawMaterialsBadge status={(item as any).rawMaterials || "AVAILABLE"} />
                   )}
                 </div>
               </div>
@@ -214,12 +214,16 @@ export default async function ItemDetailPage({
                     <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">Process</th>
                     <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">Machine</th>
                     <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">Status</th>
+                    <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">Started</th>
+                    <th className="text-left py-2 px-3 font-semibold text-gray-500 text-xs uppercase">Completed</th>
                   </tr>
                 </thead>
                 <tbody>
                   {item.processes.map((process) => {
                     const pConfig = processStatusConfig[process.status as keyof typeof processStatusConfig];
                     const PStatusIcon = pConfig?.icon || Clock;
+                    const fmt = (d: Date | null) =>
+                      d ? new Date(d).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : null;
                     return (
                       <tr key={process.id} className={`border-b transition-colors ${
                         process.status === 'IN_PROGRESS' ? 'bg-blue-50' :
@@ -243,6 +247,12 @@ export default async function ItemDetailPage({
                             <PStatusIcon className="w-3 h-3" />
                             {pConfig?.label}
                           </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-xs text-gray-500 whitespace-nowrap">
+                          {fmt(process.startedAt) ?? <span className="text-gray-300">—</span>}
+                        </td>
+                        <td className="py-2.5 px-3 text-xs text-gray-500 whitespace-nowrap">
+                          {fmt(process.completedAt) ?? <span className="text-gray-300">—</span>}
                         </td>
                       </tr>
                     );

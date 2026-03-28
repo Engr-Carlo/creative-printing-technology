@@ -131,9 +131,9 @@ export default async function ItemsPage() {
                         </td>
                         <td className="py-1.5 px-2">
                           {session.user.role === "ADMIN" ? (
-                            <RawMaterialsSelect itemId={item.id} currentStatus={(item as any).rawMaterials || "SHORT"} />
-                          ) : (
-                            <RawMaterialsBadge status={(item as any).rawMaterials || "SHORT"} />
+                            <RawMaterialsSelect itemId={item.id} currentStatus={(item as any).rawMaterials || "AVAILABLE"} />
+                            ) : (
+                            <RawMaterialsBadge status={(item as any).rawMaterials || "AVAILABLE"} />
                           )}
                         </td>
                         <td className="py-1.5 px-2">

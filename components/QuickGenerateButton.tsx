@@ -10,9 +10,9 @@ import { quickGenerateItem } from "@/app/actions/items";
 import { Zap, CheckCircle2 } from "lucide-react";
 
 const TYPES = [
-  { value: "SHEETED", label: "Sheeted", desc: "Printing → Pre-Fold → Trimming → Inspection" },
-  { value: "FOLDED",  label: "Folded",  desc: "Printing → Pre-Fold → Trimming → Folding → Inspection" },
-  { value: "STITCHING", label: "Stitching", desc: "Printing → Pre-Fold → Trimming → Folding → Stitching → Inspection" },
+  { value: "SHEETED", label: "Sheeted", desc: "Cutting → Printing → Pre-Fold → Trimming → Inspection" },
+  { value: "FOLDED",  label: "Folded",  desc: "Cutting → Printing → Pre-Fold → Trimming → Folding → Inspection" },
+  { value: "STITCHING", label: "Stitching", desc: "Cutting → Printing → Pre-Fold → Trimming → Folding → Stitching → Inspection" },
 ];
 
 export function QuickGenerateButton() {
@@ -29,7 +29,6 @@ export function QuickGenerateButton() {
     name: "",
     customer: "",
     quantity: "1",
-    targetOutput: "0",
     color: "",
     deadline: defaultDeadline,
     machines: [] as string[],
@@ -39,7 +38,7 @@ export function QuickGenerateButton() {
     setOpen(true);
     setGenerated(null);
     setError(null);
-    setForm({ type: "SHEETED", name: "", customer: "", quantity: "1", targetOutput: "0", color: "", deadline: defaultDeadline, machines: [] });
+    setForm({ type: "SHEETED", name: "", customer: "", quantity: "1", color: "", deadline: defaultDeadline, machines: [] });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -47,14 +46,15 @@ export function QuickGenerateButton() {
     setLoading(true);
     setError(null);
     try {
+      const qty = parseInt(form.quantity) || 1;
       const result = await quickGenerateItem({
         type: form.type,
         name: form.name,
         customer: form.customer,
-        quantity: parseInt(form.quantity) || 1,
-        targetOutput: parseInt(form.targetOutput) || 0,
+        quantity: qty,
+        targetOutput: qty + 500,
         color: form.color || undefined,
-        rawMaterials: "APPROVAL",
+        rawMaterials: "AVAILABLE",
         deadline: form.deadline || undefined,
         machines: form.machines.length > 0 ? form.machines.join(", ") : undefined,
       });
@@ -163,27 +163,16 @@ export function QuickGenerateButton() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label htmlFor="gen-qty" className="text-xs font-bold uppercase text-gray-500">Quantity</Label>
-                  <Input
-                    id="gen-qty"
-                    type="number"
-                    min="1"
-                    value={form.quantity}
-                    onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="gen-target" className="text-xs font-bold uppercase text-gray-500">Target Output</Label>
-                  <Input
-                    id="gen-target"
-                    type="number"
-                    min="0"
-                    value={form.targetOutput}
-                    onChange={(e) => setForm((f) => ({ ...f, targetOutput: e.target.value }))}
-                  />
-                </div>
+              <div className="space-y-1">
+                <Label htmlFor="gen-qty" className="text-xs font-bold uppercase text-gray-500">Quantity</Label>
+                <Input
+                  id="gen-qty"
+                  type="number"
+                  min="1"
+                  value={form.quantity}
+                  onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
+                />
+                <p className="text-[10px] text-gray-400">Actual output = quantity + 500 ({(parseInt(form.quantity) || 1) + 500})</p>
               </div>
 
               <div className="space-y-1">

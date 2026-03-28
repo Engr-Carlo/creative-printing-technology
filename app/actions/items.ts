@@ -50,9 +50,9 @@ export async function quickGenerateItem(data: {
 
     const deadline = data.deadline ? new Date(data.deadline) : new Date(Date.now() + 7 * 86400000);
 
-    const rawMaterials = data.rawMaterials && ["APPROVAL", "RELEASE_TO_PRODUCTION", "NOT_AVAILABLE"].includes(data.rawMaterials)
+    const rawMaterials = data.rawMaterials && ["AVAILABLE", "NOT_SUFFICIENT", "RELEASE_TO_PRODUCTION", "OUT_OF_STOCK"].includes(data.rawMaterials)
       ? data.rawMaterials
-      : "APPROVAL";
+      : "AVAILABLE";
 
     const item = await prisma.item.create({
       data: {
