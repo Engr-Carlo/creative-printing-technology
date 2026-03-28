@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ProcessStatusButton } from "@/components/ProcessStatusButton";
 import ProcessNoteCell from "@/components/ProcessNoteCell";
 import NoteSection from "@/components/NoteSection";
+import { SJFSpotlight } from "@/components/analytics/SJFSpotlight";
 
 const TYPE_BADGE: Record<string, { label: string; color: string }> = {
   SHEETED: { label: "S", color: "bg-blue-500 text-white" },
@@ -137,6 +138,11 @@ export default async function EmployeeDashboardPage(props: {
             <p className="text-lg font-bold">{completedProc}/{allProc.length}</p>
           </div>
         </div>
+      </div>
+
+      {/* ── SJF Spotlight ── */}
+      <div className="px-3 py-3 border-b bg-slate-900">
+        <SJFSpotlight />
       </div>
 
       {/* Sidebar + Main Panel */}

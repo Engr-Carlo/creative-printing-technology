@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Package, Clock, CheckCircle2, XCircle, AlertTriangle, Flame, CalendarClock, Layers, ArrowRight, TrendingUp, Activity } from "lucide-react";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
+import { SJFSpotlight } from "@/components/analytics/SJFSpotlight";
 
 async function getDashboardData() {
   const now = new Date();
@@ -105,6 +106,9 @@ export default async function DashboardPage() {
       </div>
 
       <div className="p-4 space-y-4">
+
+        {/* ── SJF Spotlight ── */}
+        <SJFSpotlight />
 
         {/* ── Two-column row: pipeline + process health ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
