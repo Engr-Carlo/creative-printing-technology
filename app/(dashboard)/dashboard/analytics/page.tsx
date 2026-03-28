@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { ProductionTrendChart } from "@/components/charts/ProductionTrendChart";
 import { ItemDistributionChart } from "@/components/charts/ItemDistributionChart";
 import { ProcessQueuePanel } from "@/components/analytics/ProcessQueuePanel";
+import { SJFScheduler } from "@/components/analytics/SJFScheduler";
 
 async function getAnalytics() {
   // Single batch: 3 queries instead of 29
@@ -125,6 +126,24 @@ export default async function AnalyticsPage() {
 
       {/* Process Queue Monitor */}
       <ProcessQueuePanel />
+
+      {/* SJF Job Scheduler */}
+      <Card className="border">
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-orange-500 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-sm font-bold">SJF Job Scheduler</CardTitle>
+              <CardDescription className="text-[10px]">Shortest Job First with aging — starvation prevention built in</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <SJFScheduler />
+        </CardContent>
+      </Card>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

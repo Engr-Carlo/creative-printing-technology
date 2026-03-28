@@ -34,13 +34,21 @@ CREATE UNIQUE INDEX IF NOT EXISTS "ItemMaterialUsage_itemId_inventoryItemId_key"
 CREATE INDEX IF NOT EXISTS "ItemMaterialUsage_inventoryItemId_idx"
   ON "ItemMaterialUsage"("inventoryItemId");
 
-ALTER TABLE "ItemMaterialUsage"
-  ADD CONSTRAINT "ItemMaterialUsage_itemId_fkey"
-  FOREIGN KEY ("itemId") REFERENCES "Item"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ItemMaterialUsage_itemId_fkey') THEN
+    ALTER TABLE "ItemMaterialUsage"
+      ADD CONSTRAINT "ItemMaterialUsage_itemId_fkey"
+      FOREIGN KEY ("itemId") REFERENCES "Item"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
 
-ALTER TABLE "ItemMaterialUsage"
-  ADD CONSTRAINT "ItemMaterialUsage_inventoryItemId_fkey"
-  FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ItemMaterialUsage_inventoryItemId_fkey') THEN
+    ALTER TABLE "ItemMaterialUsage"
+      ADD CONSTRAINT "ItemMaterialUsage_inventoryItemId_fkey"
+      FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 -- 3. InventoryTransaction table
 CREATE TABLE IF NOT EXISTS "InventoryTransaction" (
@@ -60,10 +68,18 @@ CREATE INDEX IF NOT EXISTS "InventoryTransaction_inventoryItemId_createdAt_idx"
 CREATE INDEX IF NOT EXISTS "InventoryTransaction_performedById_idx"
   ON "InventoryTransaction"("performedById");
 
-ALTER TABLE "InventoryTransaction"
-  ADD CONSTRAINT "InventoryTransaction_inventoryItemId_fkey"
-  FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'InventoryTransaction_inventoryItemId_fkey') THEN
+    ALTER TABLE "InventoryTransaction"
+      ADD CONSTRAINT "InventoryTransaction_inventoryItemId_fkey"
+      FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
 
-ALTER TABLE "InventoryTransaction"
-  ADD CONSTRAINT "InventoryTransaction_performedById_fkey"
-  FOREIGN KEY ("performedById") REFERENCES "User"("id") ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'InventoryTransaction_performedById_fkey') THEN
+    ALTER TABLE "InventoryTransaction"
+      ADD CONSTRAINT "InventoryTransaction_performedById_fkey"
+      FOREIGN KEY ("performedById") REFERENCES "User"("id") ON UPDATE CASCADE;
+  END IF;
+END $$;

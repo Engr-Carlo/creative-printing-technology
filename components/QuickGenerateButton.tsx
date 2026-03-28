@@ -29,6 +29,7 @@ export function QuickGenerateButton() {
     name: "",
     customer: "",
     quantity: "1",
+    estimatedDuration: "",
     color: "",
     deadline: defaultDeadline,
     machines: [] as string[],
@@ -38,7 +39,7 @@ export function QuickGenerateButton() {
     setOpen(true);
     setGenerated(null);
     setError(null);
-    setForm({ type: "SHEETED", name: "", customer: "", quantity: "1", color: "", deadline: defaultDeadline, machines: [] });
+    setForm({ type: "SHEETED", name: "", customer: "", quantity: "1", estimatedDuration: "", color: "", deadline: defaultDeadline, machines: [] });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -55,6 +56,7 @@ export function QuickGenerateButton() {
         targetOutput: qty + 500,
         color: form.color || undefined,
         rawMaterials: "AVAILABLE",
+        estimatedDuration: form.estimatedDuration ? parseInt(form.estimatedDuration) : undefined,
         deadline: form.deadline || undefined,
         machines: form.machines.length > 0 ? form.machines.join(", ") : undefined,
       });
@@ -173,6 +175,19 @@ export function QuickGenerateButton() {
                   onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
                 />
                 <p className="text-[10px] text-gray-400">Actual output = quantity + 500 ({(parseInt(form.quantity) || 1) + 500})</p>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="gen-duration" className="text-xs font-bold uppercase text-gray-500">Estimated Duration (minutes) <span className="normal-case text-gray-400 font-normal">— optional</span></Label>
+                <Input
+                  id="gen-duration"
+                  type="number"
+                  min="1"
+                  placeholder="e.g. 120"
+                  value={form.estimatedDuration}
+                  onChange={(e) => setForm((f) => ({ ...f, estimatedDuration: e.target.value }))}
+                />
+                <p className="text-[10px] text-gray-400">Used by the SJF scheduler for priority ordering.</p>
               </div>
 
               <div className="space-y-1">

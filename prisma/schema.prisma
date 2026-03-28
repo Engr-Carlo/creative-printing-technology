@@ -117,11 +117,12 @@ model Item {
   color         String?
   machines      String?
   customer      String
-  targetOutput  Int
-  currentOutput Int               @default(0)
-  deadline      DateTime
-  status        ItemStatus        @default(PENDING)
-  rawMaterials  RawMaterialStatus @default(NOT_AVAILABLE)
+  targetOutput      Int
+  currentOutput     Int               @default(0)
+  estimatedDuration Int?              // estimated total processing time in minutes (set by encoder)
+  deadline          DateTime
+  status            ItemStatus        @default(PENDING)
+  rawMaterials      RawMaterialStatus @default(NOT_AVAILABLE)
   
   departmentId String
   department   Department @relation(fields: [departmentId], references: [id])

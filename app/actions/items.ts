@@ -13,6 +13,7 @@ export async function quickGenerateItem(data: {
   targetOutput: number;
   color?: string;
   rawMaterials?: string;
+  estimatedDuration?: number;
   deadline?: string;
   machines?: string;
 }) {
@@ -67,6 +68,7 @@ export async function quickGenerateItem(data: {
         color: data.color || null,
         machines: data.machines || null,
         rawMaterials: rawMaterials as any,
+        estimatedDuration: data.estimatedDuration ?? null,
         status: "PENDING",
         currentOutput: 0,
       },
