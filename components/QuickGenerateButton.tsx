@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { quickGenerateItem } from "@/app/actions/items";
 import { Zap, CheckCircle2 } from "lucide-react";
 
-const TYPES = [
+v
   { value: "SHEETED", label: "Sheeted", desc: "Cutting → Printing → Pre-Fold → Trimming → Inspection" },
   { value: "FOLDED",  label: "Folded",  desc: "Cutting → Printing → Pre-Fold → Trimming → Folding → Inspection" },
   { value: "STITCHING", label: "Stitching", desc: "Cutting → Printing → Pre-Fold → Trimming → Folding → Stitching → Inspection" },
