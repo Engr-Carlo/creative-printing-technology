@@ -294,3 +294,51 @@ async function recheckAllItemsForMaterial(inventoryItemId: string) {
   });
   await Promise.all(usages.map((u) => recheckItemMaterials(u.itemId)));
 }
+
+// ─── Encoder: set material requirements ───────────────────────────────────
+
+/**
+ * Replace all material requirements for an item.
+ * Accessible by both ADMIN and ENCODER.
+ * Automatically recomputes rawMaterials status afterwards.
+ */
+export async function setItemMaterialRequirements(
+  itemId: string,
+  requirements: Array<{ inventoryItemId: string; requiredQty: number }>
+) {
+  const session = await auth();
+  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "ENCODER")) {
+    return { error: "Unauthorized" };
+  }
+  for (const r of requirements) {
+    if (r.requiredQty <= 0) return { error: "Required quantity must be positive" };
+  }
+
+  try {
+    // Replace all requirements atomically
+    await prisma.$transaction([
+      prisma.itemMaterialUsage.deleteMany({ where: { itemId } }),
+      ...(requirements.length > 0
+        ? [
+            prisma.itemMaterialUsage.createMany({
+              data: requirements.map((r) => ({
+                itemId,
+                inventoryItemId: r.inventoryItemId,
+                requiredQty: r.requiredQty,
+              })),
+            }),
+          ]
+        : []),
+    ]);
+
+    await recheckItemMaterials(itemId);
+
+    revalidatePath(`/dashboard/items/${itemId}`);
+    revalidatePath("/dashboard/items");
+    revalidatePath("/dashboard/encoder");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch {
+    return { error: "Failed to set material requirements" };
+  }
+}

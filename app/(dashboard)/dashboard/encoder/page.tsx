@@ -15,6 +15,7 @@ import { ItemDistributionChart } from "@/components/charts/ItemDistributionChart
 import ItemNoteCell from "@/components/ItemNoteCell";
 import { QuickGenerateButton } from "@/components/QuickGenerateButton";
 import { DeleteButton } from "@/components/DeleteButton";
+import { RawMaterialsBadge } from "@/components/RawMaterialsSelect";
 
 // Department category config - only MANUAL is active, others are placeholders
 const DEPARTMENT_CATEGORIES = [
@@ -372,13 +373,7 @@ export default async function EncoderDashboardPage({
                               </span>
                             </td>
                             <td className="py-1.5 px-2">
-                              <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border ${
-                                item.rawMaterials === "RELEASE_TO_PRODUCTION" ? "bg-green-100 text-green-700 border-green-300" :
-                                item.rawMaterials === "APPROVAL" ? "bg-yellow-100 text-yellow-700 border-yellow-300" :
-                                "bg-red-100 text-red-700 border-red-300"
-                              }`}>
-                                {item.rawMaterials === "RELEASE_TO_PRODUCTION" ? "Released" : item.rawMaterials === "APPROVAL" ? "For Approval" : "Not Available"}
-                              </span>
+                              <RawMaterialsBadge status={item.rawMaterials} />
                             </td>
                             <td className="py-1.5 px-2">
                               <span
