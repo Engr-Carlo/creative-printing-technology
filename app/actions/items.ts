@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { PROCESS_TEMPLATES } from "@/lib/constants/processes";
+import { PROCESS_TEMPLATES, PROCESS_MATERIAL_TEMPLATES } from "@/lib/constants/processes";
 
 export async function quickGenerateItem(data: {
   type: string;
@@ -83,6 +83,39 @@ export async function quickGenerateItem(data: {
           itemId: item.id,
         })),
       });
+
+      // Attach material usages to each process based on PROCESS_MATERIAL_TEMPLATES
+      const createdProcesses = await prisma.process.findMany({
+        where: { itemId: item.id },
+        select: { id: true, name: true },
+      });
+
+      const usageRows: { processId: string; inventoryItemId: string; requiredQty: number }[] = [];
+      for (const process of createdProcesses) {
+        const matTemplates = PROCESS_MATERIAL_TEMPLATES[process.name] ?? [];
+        for (const tmpl of matTemplates) {
+          // ifColor: skip if item color does not match
+          if (tmpl.ifColor !== undefined && data.color !== tmpl.ifColor) continue;
+          // excludeIfColor: skip if item color matches the exclusion
+          if (tmpl.excludeIfColor !== undefined && data.color === tmpl.excludeIfColor) continue;
+
+          const invItem = await prisma.inventoryItem.findFirst({
+            where: { name: tmpl.materialName },
+            select: { id: true },
+          });
+          if (!invItem) continue; // material not seeded yet — skip silently
+
+          usageRows.push({
+            processId: process.id,
+            inventoryItemId: invItem.id,
+            requiredQty: tmpl.qtyFormula(data.targetOutput || 0),
+          });
+        }
+      }
+
+      if (usageRows.length > 0) {
+        await prisma.processMaterialUsage.createMany({ data: usageRows });
+      }
     }
 
     revalidatePath("/dashboard/items");

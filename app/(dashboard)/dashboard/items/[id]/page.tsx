@@ -7,7 +7,6 @@ import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { RawMaterialsSelect, RawMaterialsBadge } from "@/components/RawMaterialsSelect";
 import { ItemMaterialsCard } from "@/components/inventory/ItemMaterialsCard";
-import { getInventoryItems, getItemMaterials } from "@/app/actions/inventory";
 
 async function getItem(id: string) {
   return prisma.item.findUnique({
@@ -18,6 +17,9 @@ async function getItem(id: string) {
         include: {
           assignedTo: true,
           machine: true,
+          materialUsages: {
+            include: { inventoryItem: true },
+          },
         },
         orderBy: { order: "asc" },
       },
@@ -56,10 +58,8 @@ export default async function ItemDetailPage({
   }
 
   const { id } = await params;
-  const [item, materialUsages, inventoryItems] = await Promise.all([
+  const [item] = await Promise.all([
     getItem(id),
-    getItemMaterials(id),
-    getInventoryItems(),
   ]);
   
   if (!item) {
@@ -210,8 +210,7 @@ export default async function ItemDetailPage({
         <CardContent>
           <ItemMaterialsCard
             itemId={item.id}
-            initialUsages={materialUsages as any}
-            inventoryOptions={inventoryItems as any}
+            processes={item.processes as any}
             rawMaterials={(item as any).rawMaterials ?? "AVAILABLE"}
             isAdmin={session.user.role === "ADMIN"}
           />

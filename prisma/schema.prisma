@@ -161,6 +161,7 @@ model Process {
   updates     ProcessUpdate[]
   delayReasons DelayReason[]
   notes        Note[]
+  materialUsages ProcessMaterialUsage[]
   
   startedAt   DateTime?
   completedAt DateTime?
@@ -271,6 +272,7 @@ model InventoryItem {
 
   usages       ItemMaterialUsage[]
   transactions InventoryTransaction[]
+  processMaterialUsages ProcessMaterialUsage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -308,4 +310,18 @@ model InventoryTransaction {
 
   @@index([inventoryItemId, createdAt])
   @@index([performedById])
+}
+
+model ProcessMaterialUsage {
+  id          String @id @default(cuid())
+  requiredQty Float
+
+  processId String
+  process   Process @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  inventoryItemId String
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@unique([processId, inventoryItemId])
+  @@index([inventoryItemId])
 }

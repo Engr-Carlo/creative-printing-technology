@@ -7,8 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { quickGenerateItem } from "@/app/actions/items";
-import { getInventoryItems, setItemMaterialRequirements } from "@/app/actions/inventory";
-import { Zap, CheckCircle2, Plus, Trash2, Package2, ChevronDown, ChevronUp } from "lucide-react";
+import { Zap, CheckCircle2 } from "lucide-react";
 
 const TYPES = [
   { value: "SHEETED", label: "Sheeted", desc: "Cutting → Printing → Pre-Fold → Trimming → Inspection" },
@@ -16,18 +15,12 @@ const TYPES = [
   { value: "STITCHING", label: "Stitching", desc: "Cutting → Printing → Pre-Fold → Trimming → Folding → Stitching → Inspection" },
 ];
 
-interface InvItem { id: string; name: string; unit: string; currentStock: number; }
-interface MatRow  { inventoryItemId: string; requiredQty: string; }
-
 export function QuickGenerateButton() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState<{ itemId: string; itemNumber: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [invItems, setInvItems] = useState<InvItem[]>([]);
-  const [showMaterials, setShowMaterials] = useState(false);
-  const [materials, setMaterials] = useState<MatRow[]>([]);
 
   const defaultDeadline = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
 
@@ -53,29 +46,8 @@ export function QuickGenerateButton() {
     setOpen(true);
     setGenerated(null);
     setError(null);
-    setMaterials([]);
-    setShowMaterials(false);
     const qty = 1;
     setForm({ type: "SHEETED", name: "", customer: "", quantity: "1", targetOutput: String(qty + 500), estimatedDuration: "", color: "", deadline: defaultDeadline, machines: [] });
-  }
-
-  // Fetch inventory items when dialog opens
-  useEffect(() => {
-    if (open) {
-      getInventoryItems().then((items) => setInvItems(items as InvItem[]));
-    }
-  }, [open]);
-
-  function addMaterialRow() {
-    setMaterials((m) => [...m, { inventoryItemId: "", requiredQty: "1" }]);
-  }
-
-  function removeMaterialRow(idx: number) {
-    setMaterials((m) => m.filter((_, i) => i !== idx));
-  }
-
-  function updateMaterialRow(idx: number, field: keyof MatRow, value: string) {
-    setMaterials((m) => m.map((row, i) => i === idx ? { ...row, [field]: value } : row));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -102,17 +74,6 @@ export function QuickGenerateButton() {
         return;
       }
       if (result.success && result.itemId) {
-        // Attach material requirements if any were specified
-        const validMaterials = materials.filter((m) => m.inventoryItemId && parseFloat(m.requiredQty) > 0);
-        if (validMaterials.length > 0) {
-          await setItemMaterialRequirements(
-            result.itemId,
-            validMaterials.map((m) => ({
-              inventoryItemId: m.inventoryItemId,
-              requiredQty: parseFloat(m.requiredQty),
-            }))
-          );
-        }
         setGenerated({ itemId: result.itemId, itemNumber: result.itemNumber! });
       }
     } catch {
@@ -157,11 +118,6 @@ export function QuickGenerateButton() {
                 <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-2" />
                 <p className="text-sm text-gray-600">Item generated successfully!</p>
                 <p className="text-xl font-bold font-mono text-green-700 mt-1">{generated.itemNumber}</p>
-                {materials.filter((m) => m.inventoryItemId).length > 0 && (
-                  <p className="text-xs text-green-600 mt-1">
-                    {materials.filter((m) => m.inventoryItemId).length} material requirement(s) saved — raw material status auto-computed.
-                  </p>
-                )}
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={handleGoToEmployee} className="flex-1">
@@ -306,89 +262,6 @@ export function QuickGenerateButton() {
                   value={form.deadline}
                   onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))}
                 />
-              </div>
-
-              {/* ── Process Requirements (optional) ── */}
-              <div className="border rounded-lg overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setShowMaterials((v) => !v)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
-                >
-                  <div className="flex items-center gap-2">
-                    <Package2 className="w-4 h-4 text-orange-500" />
-                    <span className="text-xs font-bold uppercase text-gray-600">Process Requirements</span>
-                    {materials.filter((m) => m.inventoryItemId).length > 0 && (
-                      <span className="text-[10px] bg-orange-100 text-orange-700 font-bold px-1.5 py-0.5 rounded-full">
-                        {materials.filter((m) => m.inventoryItemId).length}
-                      </span>
-                    )}
-                    <span className="text-[10px] text-gray-400 font-normal normal-case">— optional</span>
-                  </div>
-                  {showMaterials ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-                </button>
-
-                {showMaterials && (
-                  <div className="p-3 space-y-2 bg-white">
-                    <p className="text-[10px] text-gray-500">
-                      Specify what raw materials this job requires. The system will auto-check inventory and set the materials status.
-                    </p>
-
-                    {invItems.length === 0 ? (
-                      <p className="text-xs text-gray-400 italic py-2">No inventory items found. Ask admin to add materials to inventory first.</p>
-                    ) : (
-                      <>
-                        {materials.map((row, idx) => {
-                          const selected = invItems.find((i) => i.id === row.inventoryItemId);
-                          return (
-                            <div key={idx} className="flex items-center gap-2">
-                              <select
-                                value={row.inventoryItemId}
-                                onChange={(e) => updateMaterialRow(idx, "inventoryItemId", e.target.value)}
-                                className="flex-1 h-8 rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                              >
-                                <option value="">Select material…</option>
-                                {invItems.map((inv) => (
-                                  <option key={inv.id} value={inv.id}>
-                                    {inv.name} (stock: {inv.currentStock} {inv.unit})
-                                  </option>
-                                ))}
-                              </select>
-                              <Input
-                                type="number"
-                                min="0.01"
-                                step="0.01"
-                                placeholder="Qty"
-                                value={row.requiredQty}
-                                onChange={(e) => updateMaterialRow(idx, "requiredQty", e.target.value)}
-                                className="w-20 h-8 text-xs"
-                              />
-                              {selected && (
-                                <span className="text-[10px] text-gray-400 w-12 shrink-0">{selected.unit}</span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => removeMaterialRow(idx)}
-                                className="text-red-400 hover:text-red-600 shrink-0"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          );
-                        })}
-
-                        <button
-                          type="button"
-                          onClick={addMaterialRow}
-                          className="flex items-center gap-1.5 text-xs text-orange-600 hover:text-orange-700 font-semibold mt-1"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          Add material
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
               </div>
 
               {error && (

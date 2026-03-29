@@ -192,43 +192,32 @@ export async function releaseItemToProduction(itemId: string) {
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") return { error: "Unauthorized" };
 
-  const usages = await prisma.itemMaterialUsage.findMany({
-    where: { itemId },
+  // Aggregate required quantities from not-yet-completed processes to warn admin
+  const processUsages = await prisma.processMaterialUsage.findMany({
+    where: { process: { itemId, status: { notIn: ["COMPLETED", "REJECTED"] } } },
     include: { inventoryItem: true },
   });
-
-  // Warn if any material is insufficient (but still allow — admin override)
-  const insufficient = usages.filter(
-    (u) => u.inventoryItem.currentStock < u.requiredQty
-  );
+  const needed = new Map<string, { name: string; stock: number; required: number }>();
+  for (const u of processUsages) {
+    const ex = needed.get(u.inventoryItemId);
+    if (ex) {
+      ex.required += u.requiredQty;
+    } else {
+      needed.set(u.inventoryItemId, {
+        name: u.inventoryItem.name,
+        stock: u.inventoryItem.currentStock,
+        required: u.requiredQty,
+      });
+    }
+  }
+  const insufficient = [...needed.values()].filter((n) => n.stock < n.required);
 
   try {
-    await prisma.$transaction([
-      // Deduct all required materials from inventory
-      ...usages.map((u) =>
-        prisma.inventoryItem.update({
-          where: { id: u.inventoryItemId },
-          data: { currentStock: { decrement: u.requiredQty } },
-        })
-      ),
-      // Log each deduction
-      ...usages.map((u) =>
-        prisma.inventoryTransaction.create({
-          data: {
-            type: "DEDUCT",
-            quantity: -u.requiredQty,
-            note: `Released to production — JR ${itemId}`,
-            inventoryItemId: u.inventoryItemId,
-            performedById: session.user.id,
-          },
-        })
-      ),
-      // Mark item as released
-      prisma.item.update({
-        where: { id: itemId },
-        data: { rawMaterials: "RELEASE_TO_PRODUCTION" as any },
-      }),
-    ]);
+    // Only update status — materials are deducted per-process as each completes
+    await prisma.item.update({
+      where: { id: itemId },
+      data: { rawMaterials: "RELEASE_TO_PRODUCTION" as any },
+    });
 
     revalidatePath(`/dashboard/items/${itemId}`);
     revalidatePath("/dashboard/inventory");
@@ -238,7 +227,7 @@ export async function releaseItemToProduction(itemId: string) {
       success: true,
       warning:
         insufficient.length > 0
-          ? `${insufficient.map((u) => u.inventoryItem.name).join(", ")} had insufficient stock — released anyway.`
+          ? `${insufficient.map((n) => n.name).join(", ")} may have insufficient stock when processes run.`
           : undefined,
     };
   } catch {
@@ -249,17 +238,23 @@ export async function releaseItemToProduction(itemId: string) {
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 /**
- * Re-evaluates the rawMaterials status of a single item
- * based on its current material requirements vs. inventory stock.
+ * Re-evaluates the rawMaterials status of a single item based on the total
+ * required quantities of its not-yet-completed processes vs current stock.
  * Will NOT downgrade an item that's already RELEASE_TO_PRODUCTION.
  */
 async function recheckItemMaterials(itemId: string) {
-  const usages = await prisma.itemMaterialUsage.findMany({
-    where: { itemId },
+  // Sum required quantities from processes that are not yet completed/rejected
+  const activeUsages = await prisma.processMaterialUsage.findMany({
+    where: {
+      process: {
+        itemId,
+        status: { notIn: ["COMPLETED", "REJECTED"] },
+      },
+    },
     include: { inventoryItem: true },
   });
 
-  if (usages.length === 0) return;
+  if (activeUsages.length === 0) return;
 
   const item = await prisma.item.findUnique({
     where: { id: itemId },
@@ -267,13 +262,26 @@ async function recheckItemMaterials(itemId: string) {
   });
   if (item?.rawMaterials === "RELEASE_TO_PRODUCTION") return;
 
+  // Aggregate needed qty per inventory item
+  const needed = new Map<string, { stock: number; required: number }>();
+  for (const u of activeUsages) {
+    const ex = needed.get(u.inventoryItemId);
+    if (ex) {
+      ex.required += u.requiredQty;
+    } else {
+      needed.set(u.inventoryItemId, {
+        stock: u.inventoryItem.currentStock,
+        required: u.requiredQty,
+      });
+    }
+  }
+
   let newStatus = "AVAILABLE";
-  for (const u of usages) {
-    const stock = u.inventoryItem.currentStock;
+  for (const { stock, required } of needed.values()) {
     if (stock <= 0) {
       newStatus = "OUT_OF_STOCK";
       break;
-    } else if (stock < u.requiredQty) {
+    } else if (stock < required) {
       newStatus = "NOT_SUFFICIENT";
     }
   }
@@ -285,14 +293,15 @@ async function recheckItemMaterials(itemId: string) {
 }
 
 /**
- * After a stock change, re-check all items that require this material.
+ * After a stock change, re-check all items whose pending processes require this material.
  */
 async function recheckAllItemsForMaterial(inventoryItemId: string) {
-  const usages = await prisma.itemMaterialUsage.findMany({
+  const processUsages = await prisma.processMaterialUsage.findMany({
     where: { inventoryItemId },
-    select: { itemId: true },
+    select: { process: { select: { itemId: true } } },
   });
-  await Promise.all(usages.map((u) => recheckItemMaterials(u.itemId)));
+  const itemIds = [...new Set(processUsages.map((u) => u.process.itemId))];
+  await Promise.all(itemIds.map(recheckItemMaterials));
 }
 
 // ─── Encoder: set material requirements ───────────────────────────────────

@@ -77,6 +77,36 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
     let itemRejected = false;
 
     if (newStatus === "COMPLETED") {
+      // ── Deduct materials consumed by this process ──────────────────────
+      const materialUsages = await prisma.processMaterialUsage.findMany({
+        where: { processId },
+        include: { inventoryItem: true },
+      });
+
+      if (materialUsages.length > 0) {
+        await prisma.$transaction([
+          ...materialUsages.map((u) =>
+            prisma.inventoryItem.update({
+              where: { id: u.inventoryItemId },
+              data: { currentStock: { decrement: u.requiredQty } },
+            })
+          ),
+          ...materialUsages.map((u) =>
+            prisma.inventoryTransaction.create({
+              data: {
+                type: "DEDUCT",
+                quantity: -u.requiredQty,
+                note: `Process "${process.name}" completed — ${process.item.itemNumber}`,
+                inventoryItemId: u.inventoryItemId,
+                performedById: session.user.id,
+              },
+            })
+          ),
+        ]);
+        revalidatePath("/dashboard/inventory");
+      }
+
+      // ── Check if all processes done → mark item COMPLETED ──────────────
       const siblings = await prisma.process.findMany({
         where: { itemId: process.itemId },
         select: { status: true },
