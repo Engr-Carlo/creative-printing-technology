@@ -17,6 +17,8 @@ export const PROCESS_TEMPLATES: Record<string, string[]> = {
  */
 export interface ProcessMaterialTemplate {
   materialName: string;
+  /** Inventory unit (e.g. "reams", "kg", "rolls") — used to auto-create item if not seeded */
+  unit: string;
   qtyFormula: (targetOutput: number) => number;
   /** If set, material only applies when item.color strictly equals this string */
   ifColor?: string;
@@ -27,20 +29,20 @@ export interface ProcessMaterialTemplate {
 export const PROCESS_MATERIAL_TEMPLATES: Record<string, ProcessMaterialTemplate[]> = {
   // Cutting consumes paper stock (reams). 1 ream ≈ 500 sheets.
   Cutting: [
-    { materialName: "Paper Stock", qtyFormula: (t) => Math.ceil(t / 500) },
+    { materialName: "Paper Stock",     unit: "reams", qtyFormula: (t) => Math.ceil(t / 500) },
   ],
   // Printing: Ink-Black is default; Ink-Color only when color = "Two Colors".
   Printing: [
-    { materialName: "Ink - Black", qtyFormula: (t) => Math.ceil(t / 2000), excludeIfColor: "Two Colors" },
-    { materialName: "Ink - Color",  qtyFormula: (t) => Math.ceil(t / 1000), ifColor: "Two Colors" },
+    { materialName: "Ink - Black",     unit: "kg",    qtyFormula: (t) => Math.ceil(t / 2000), excludeIfColor: "Two Colors" },
+    { materialName: "Ink - Color",     unit: "kg",    qtyFormula: (t) => Math.ceil(t / 1000), ifColor: "Two Colors" },
   ],
   // Folding uses adhesive.
   Folding: [
-    { materialName: "Adhesive / Glue", qtyFormula: (t) => Math.ceil(t / 5000) },
+    { materialName: "Adhesive / Glue", unit: "kg",    qtyFormula: (t) => Math.ceil(t / 5000) },
   ],
   // Stitching uses wire.
   Stitching: [
-    { materialName: "Stitching Wire", qtyFormula: (t) => Math.ceil(t / 2000) },
+    { materialName: "Stitching Wire",  unit: "rolls", qtyFormula: (t) => Math.ceil(t / 2000) },
   ],
   // These processes consume no tracked inventory:
   "Pre-Fold/Inspection": [],

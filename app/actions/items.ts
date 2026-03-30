@@ -99,11 +99,31 @@ export async function quickGenerateItem(data: {
           // excludeIfColor: skip if item color matches the exclusion
           if (tmpl.excludeIfColor !== undefined && data.color === tmpl.excludeIfColor) continue;
 
-          const invItem = await prisma.inventoryItem.findFirst({
+          // Find or auto-create the inventory item so deduction always works
+          let invItem = await prisma.inventoryItem.findFirst({
             where: { name: tmpl.materialName },
             select: { id: true },
           });
-          if (!invItem) continue; // material not seeded yet — skip silently
+          if (!invItem) {
+            try {
+              invItem = await prisma.inventoryItem.create({
+                data: {
+                  name: tmpl.materialName,
+                  unit: tmpl.unit,
+                  currentStock: 0,
+                  minStock: 0,
+                },
+                select: { id: true },
+              });
+            } catch {
+              // Race condition — another request created it first; fetch it
+              invItem = await prisma.inventoryItem.findFirst({
+                where: { name: tmpl.materialName },
+                select: { id: true },
+              });
+              if (!invItem) continue;
+            }
+          }
 
           usageRows.push({
             processId: process.id,
