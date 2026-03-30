@@ -95,67 +95,6 @@ const RM_LABEL: Record<string, { label: string; cls: string }> = {
   APPROVAL:              { label: "Pending Approval",  cls: "text-orange-600"},
 };
 
-// ─── Formula Display ─────────────────────────────────────────────────────────
-
-function FormulaCard() {
-  return (
-    <div
-      className="animate-fade-slide-up bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
-      style={{ animationDelay: "0ms" }}
-    >
-      <h2 className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-4">
-        Priority Formula — Shortest Job First with Aging
-      </h2>
-
-      {/* Main formula */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {/* P(j) = */}
-        <span className="text-3xl font-light text-gray-800 tracking-tight">P(j) =</span>
-
-        {/* B over t */}
-        <div className="flex flex-col items-center">
-          <span className="text-2xl font-light text-gray-800 leading-none pb-1">B</span>
-          <div className="w-full h-px bg-gray-700" />
-          <span className="text-2xl font-light text-gray-800 leading-none pt-1">t</span>
-        </div>
-
-        {/* + r · w */}
-        <span className="text-3xl font-light text-gray-800 tracking-tight">+ r · w</span>
-      </div>
-
-      {/* Variable legend */}
-      <dl className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2 text-[12px]">
-        <div>
-          <dt className="font-semibold text-gray-700">B = 1000</dt>
-          <dd className="text-gray-400">base weight</dd>
-        </div>
-        <div>
-          <dt className="font-semibold text-gray-700">t = est. duration (min)</dt>
-          <dd className="text-gray-400">processing time</dd>
-        </div>
-        <div>
-          <dt className="font-semibold text-gray-700">r = 20</dt>
-          <dd className="text-gray-400">aging rate</dd>
-        </div>
-        <div>
-          <dt className="font-semibold text-gray-700">w = wait (hrs)</dt>
-          <dd className="text-gray-400">time in queue</dd>
-        </div>
-      </dl>
-
-      {/* Starvation note */}
-      <div className="mt-4 pt-4 border-t border-dashed border-gray-200 flex items-start gap-2">
-        <Flame className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-        <p className="text-[12px] text-gray-500">
-          <span className="font-semibold text-gray-700">Starvation prevention:</span>{" "}
-          if w ≥ 8 h then P → ∞ (job is pinned to the top of the queue regardless of duration).
-          Aging threshold: 4 h (amber) → 8 h (red, critical).
-        </p>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function JobQueueTable() {
@@ -201,6 +140,13 @@ export function JobQueueTable() {
 
   const criticalCount = queue.filter((j) => j.agingTier === "CRITICAL").length;
   const agingCount    = queue.filter((j) => j.agingTier === "AGING").length;
+  // Highest REAL score (excluding the +999999 starvation offset) for bar widths
+  const topRealScore  = Math.max(
+    1,
+    ...queue.map((j) =>
+      j.agingTier === "CRITICAL" ? j.priorityScore - 999_999 : j.priorityScore
+    )
+  );
 
   return (
     <>
@@ -213,13 +159,10 @@ export function JobQueueTable() {
       )}
 
     <div className="space-y-5 p-6">
-      {/* Formula */}
-      <FormulaCard />
-
       {/* Stats row + Refresh */}
       <div
         className="animate-fade-slide-up flex flex-wrap items-center justify-between gap-3"
-        style={{ animationDelay: "80ms" }}
+        style={{ animationDelay: "0ms" }}
       >
         <div className="flex flex-wrap items-center gap-2 text-[12px]">
           <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-600 font-medium">
@@ -268,7 +211,7 @@ export function JobQueueTable() {
       {/* Table */}
       <div
         className="animate-fade-slide-up bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden"
-        style={{ animationDelay: "140ms" }}
+        style={{ animationDelay: "60ms" }}
       >
         {!loaded ? (
           <div className="py-16 text-center text-gray-400 text-sm animate-pulse">
@@ -355,7 +298,7 @@ export function JobQueueTable() {
                         <AgingBadge tier={job.agingTier} hours={job.waitingHours} />
                       </td>
 
-                      {/* Score */}
+                      {/* Score + visual bar */}
                       <td className="px-4 py-3 text-right">
                         <span
                           className={`animate-score-pop font-mono text-[15px] font-bold tabular-nums ${
@@ -369,6 +312,22 @@ export function JobQueueTable() {
                         >
                           {fmtScore(job.priorityScore)}
                         </span>
+                        {/* Proportional bar — visually confirms descending order */}
+                        <div className="mt-1.5 h-1 w-24 ml-auto bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ease-out ${
+                              isCritical ? "bg-red-400" : isFirst ? "bg-orange-400" : "bg-gray-400"
+                            }`}
+                            style={{
+                              width: `${
+                                isCritical
+                                  ? 100
+                                  : Math.max(4, Math.round((job.priorityScore / topRealScore) * 100))
+                              }%`,
+                              transitionDelay: `${220 + i * 40}ms`,
+                            }}
+                          />
+                        </div>
                       </td>
 
                       {/* Processes */}
