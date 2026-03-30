@@ -270,8 +270,11 @@ export function JobQueueTable() {
 
                       {/* Job info */}
                       <td className="px-4 py-3">
-                        <div className="font-mono text-[11px] font-bold text-blue-600 mb-0.5">
-                          {job.itemNumber}
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="font-mono text-[11px] font-bold text-blue-600">{job.itemNumber}</span>
+                          {(job as any).suggestionBoost && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[9px] font-bold">↑ Boosted</span>
+                          )}
                         </div>
                         <div className="font-medium text-gray-800 truncate max-w-[180px]">{job.name}</div>
                         <div className="text-[11px] text-gray-400 truncate max-w-[180px]">{job.customer}</div>

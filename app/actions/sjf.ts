@@ -41,6 +41,7 @@ export interface SJFEntry {
   rawMaterials: string;
   processCount: number;
   completedProcesses: number;
+  suggestionBoost: boolean;        // true when Line Leader accepted a queue suggestion
 }
 
 export async function getSJFQueue(): Promise<SJFEntry[]> {
@@ -50,6 +51,7 @@ export async function getSJFQueue(): Promise<SJFEntry[]> {
     include: {
       processes: { select: { status: true } },
     },
+    // select includes suggestionBoost via include (Prisma returns all scalar fields)
   });
 
   const now = Date.now();
@@ -61,7 +63,9 @@ export async function getSJFQueue(): Promise<SJFEntry[]> {
     // Core SJF + Aging priority formula
     const basePriority = BASE_WEIGHT / duration;
     const agingBonus   = waitingHours * AGING_RATE;
-    let   priorityScore = Math.round((basePriority + agingBonus) * 10) / 10;
+    // Suggestion boost: +500 when a Line Leader accepted the queue suggestion for this item
+    const suggestionBonus = (item as any).suggestionBoost ? 500 : 0;
+    let   priorityScore = Math.round((basePriority + agingBonus + suggestionBonus) * 10) / 10;
 
     // Critical jobs float to top: very high score overrides everything
     let agingTier: AgingTier = "FRESH";
@@ -93,6 +97,7 @@ export async function getSJFQueue(): Promise<SJFEntry[]> {
       rawMaterials: (item as any).rawMaterials ?? "AVAILABLE",
       processCount: item.processes.length,
       completedProcesses,
+      suggestionBoost: (item as any).suggestionBoost ?? false,
     };
   });
 

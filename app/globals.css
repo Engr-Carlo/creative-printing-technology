@@ -105,3 +105,12 @@
 .animate-score-pop {
   animation: scorePop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}

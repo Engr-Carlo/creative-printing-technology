@@ -4,6 +4,8 @@ import { Package, Clock, CheckCircle2, XCircle, AlertTriangle, Flame, CalendarCl
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { NextJobBanner } from "@/components/analytics/NextJobBanner";
+import { getAllProcessTypeHealth } from "@/app/actions/queue-analysis";
+import { ProcessQueueHealthSection } from "@/components/dashboard/ProcessQueueHealthSection";
 
 async function getDashboardData() {
   const now = new Date();
@@ -68,6 +70,7 @@ export default async function DashboardPage() {
   const { total, pending, inProgress, completed, rejected, urgent, byType, allProc, doneProc, recentActivity } = await getDashboardData();
   const procPct = allProc > 0 ? Math.round((doneProc / allProc) * 100) : 0;
   const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const queueHealth = await getAllProcessTypeHealth();
 
   return (
     <div className="min-h-full bg-gray-50">
@@ -109,6 +112,9 @@ export default async function DashboardPage() {
 
         {/* ── Next Job Banner ── */}
         <NextJobBanner />
+
+        {/* ── Process Queue Health ── */}
+        <ProcessQueueHealthSection tiles={queueHealth} />
 
         {/* ── Two-column row: pipeline + process health ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

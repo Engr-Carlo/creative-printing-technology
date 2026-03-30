@@ -1,13 +1,12 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { Package, Cog, Monitor, CheckCircle2, ChevronRight } from "lucide-react";
+import { Package, Monitor, CheckCircle2, ChevronRight } from "lucide-react";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
-import { ProcessStatusButton } from "@/components/ProcessStatusButton";
-import ProcessNoteCell from "@/components/ProcessNoteCell";
 import NoteSection from "@/components/NoteSection";
 import { NextJobBanner } from "@/components/analytics/NextJobBanner";
+import { ProcessEvaluationPanel } from "@/components/ProcessEvaluationPanel";
 
 const TYPE_BADGE: Record<string, { label: string; color: string }> = {
   SHEETED: { label: "S", color: "bg-blue-500 text-white" },
@@ -19,22 +18,6 @@ const TYPE_LABELS: Record<string, string> = {
   SHEETED: "Sheeted",
   FOLDED: "Folded",
   STITCHING: "Stitching",
-};
-
-const processStatusColors: Record<string, string> = {
-  COMPLETED: "bg-green-500 text-white",
-  IN_PROGRESS: "bg-blue-500 text-white",
-  DELAYED: "bg-orange-500 text-white",
-  NOT_STARTED: "bg-gray-200 text-gray-600",
-  REJECTED: "bg-red-500 text-white",
-};
-
-const processStatusLabels: Record<string, string> = {
-  COMPLETED: "Done",
-  IN_PROGRESS: "On-Going",
-  DELAYED: "Delayed",
-  NOT_STARTED: "Pending",
-  REJECTED: "Rejected",
 };
 
 async function getLineLeaderData() {
@@ -373,116 +356,14 @@ export default async function EmployeeDashboardPage(props: {
               </div>
 
               {/* Process Evaluation */}
-              <div className="bg-white rounded-lg border overflow-hidden">
-                <div className="px-4 py-2 bg-gray-50 border-b flex items-center justify-between">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
-                    <Cog className="w-3 h-3" />
-                    Process Evaluation — {TYPE_LABELS[selectedItem.type] || selectedItem.type}
-                  </p>
-                  <p className="text-[10px] text-gray-500">
-                    {selectedItem.processes.filter((p: { status: string }) => p.status === "COMPLETED").length}/{selectedItem.processes.length} complete
-                  </p>
-                </div>
-
-                <div className="p-3 space-y-2">
-                  {selectedItem.processes.length === 0 ? (
-                    <div className="text-center py-4 text-muted-foreground text-xs">
-                      No processes defined for this item
-                    </div>
-                  ) : (
-                    selectedItem.processes.map((proc, idx) => {
-                      // Determine if this process should be locked
-                      const itemRejected = selectedItem.status === "REJECTED";
-                      const rawNotReady = selectedItem.rawMaterials !== "RELEASE_TO_PRODUCTION";
-                      const prevProc = idx > 0 ? selectedItem.processes[idx - 1] : null;
-                      const prevNotDone = prevProc && prevProc.status !== "COMPLETED";
-                      const anyPrevRejected = selectedItem.processes.slice(0, idx).some((p: { status: string }) => p.status === "REJECTED");
-
-                      let processLocked = false;
-                      let lockReason = "";
-
-                      if (proc.status === "NOT_STARTED") {
-                        if (itemRejected || anyPrevRejected) {
-                          processLocked = true;
-                          lockReason = "Item rejected";
-                        } else if (rawNotReady) {
-                          processLocked = true;
-                          lockReason = selectedItem.rawMaterials === "APPROVAL" ? "Raw materials pending approval" : "Raw materials not available";
-                        } else if (prevNotDone) {
-                          processLocked = true;
-                          lockReason = `Complete "${prevProc!.name}" first`;
-                        }
-                      }
-
-                      return (
-                      <div
-                        key={proc.id}
-                        className={`rounded-lg border-2 transition-all ${
-                          proc.status === "IN_PROGRESS" ? "border-blue-400 bg-blue-50 shadow-md shadow-blue-100" :
-                          proc.status === "COMPLETED"   ? "border-green-200 bg-green-50/50" :
-                          proc.status === "REJECTED"    ? "border-red-200 bg-red-50/50" :
-                          proc.status === "DELAYED"     ? "border-orange-200 bg-orange-50/50" :
-                          processLocked               ? "border-gray-200 bg-gray-50 opacity-60" :
-                          "border-gray-200 bg-white"
-                        }`}
-                      >
-                        <div className="p-3 flex items-center gap-3">
-                          <span className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${
-                            proc.status === "IN_PROGRESS" ? "bg-blue-500 text-white" :
-                            proc.status === "COMPLETED"   ? "bg-green-500 text-white" :
-                            proc.status === "REJECTED"    ? "bg-red-500 text-white" :
-                            proc.status === "DELAYED"     ? "bg-orange-400 text-white" :
-                            "bg-gray-200 text-gray-500"
-                          }`}>{proc.order}</span>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className={`font-bold text-sm ${
-                                proc.status === "IN_PROGRESS" ? "text-blue-900" :
-                                proc.status === "COMPLETED"   ? "text-green-900" :
-                                proc.status === "REJECTED"    ? "text-red-900" :
-                                "text-gray-700"
-                              }`}>{proc.name}</p>
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${processStatusColors[proc.status]}`}>
-                                {processStatusLabels[proc.status]}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3 text-[10px] text-gray-500 mt-0.5">
-                              <span className="flex items-center gap-1">
-                                <Monitor className="w-2.5 h-2.5" />
-                                {proc.machine?.name || "—"}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex-shrink-0 flex items-center gap-2">
-                            <ProcessStatusButton
-                              processId={proc.id}
-                              currentStatus={proc.status}
-                              processName={proc.name}
-                              prominent={proc.status === "IN_PROGRESS" || proc.status === "DELAYED"}
-                              locked={processLocked}
-                              lockReason={lockReason}
-                            />
-                            <ProcessNoteCell processId={proc.id} notes={(proc as any).notes || []} />
-                          </div>
-                        </div>
-
-                        {proc.status === "IN_PROGRESS" && (
-                          <div className="px-3 pb-3">
-                            <div className="bg-blue-100 border border-blue-200 rounded-md px-3 py-2">
-                              <p className="text-[11px] text-blue-700 font-semibold">
-                                ▶ Active — inspect this process and click COMPLETE to pass or REJECT to fail it.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
+              <ProcessEvaluationPanel
+                itemId={selectedItem.id}
+                itemType={selectedItem.type}
+                itemStatus={selectedItem.status}
+                rawMaterials={selectedItem.rawMaterials}
+                processes={selectedItem.processes as any}
+                readOnly={false}
+              />
 
               {/* Item Notes */}
               <Card className="border">

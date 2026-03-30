@@ -84,6 +84,7 @@ model User {
   processUpdates       ProcessUpdate[]
   notes                Note[]
   inventoryTransactions InventoryTransaction[]
+  suggestionLogs       QueueSuggestionLog[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -127,11 +128,15 @@ model Item {
   departmentId String
   department   Department @relation(fields: [departmentId], references: [id])
   
+  // Queue suggestion: set to true when a Line Leader accepts a queue suggestion
+  suggestionBoost Boolean @default(false)
+
   // Relations
   processes        Process[]
   assignments      ItemAssignment[]
   notes            Note[]
   materialUsages   ItemMaterialUsage[]
+  suggestionLogs   QueueSuggestionLog[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -144,7 +149,7 @@ model Item {
 
 model Process {
   id     String        @id @default(cuid())
-  name   String        // "P1", "P2", etc.
+  name   String        // "Cutting", "Printing", etc.
   order  Int           // 1, 2, 3... for sequential ordering
   status ProcessStatus @default(NOT_STARTED)
   
@@ -158,10 +163,11 @@ model Process {
   assignedTo   User?   @relation("ProcessAssignee", fields: [assignedToId], references: [id])
   
   // Relations
-  updates     ProcessUpdate[]
-  delayReasons DelayReason[]
-  notes        Note[]
+  updates        ProcessUpdate[]
+  delayReasons   DelayReason[]
+  notes          Note[]
   materialUsages ProcessMaterialUsage[]
+  suggestionLogs QueueSuggestionLog[]
   
   startedAt   DateTime?
   completedAt DateTime?
@@ -324,4 +330,28 @@ model ProcessMaterialUsage {
 
   @@unique([processId, inventoryItemId])
   @@index([inventoryItemId])
+}
+
+// ─── Queue Suggestion Logs ────────────────────────────────────
+
+model QueueSuggestionLog {
+  id              String   @id @default(cuid())
+  processTypeName String   // e.g. "Cutting", "Printing"
+  rho             Float    // server utilization at time of response
+  response        String   // "ACCEPTED" | "REJECTED"
+
+  processId String
+  process   Process @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([processTypeName])
+  @@index([userId])
+  @@index([itemId])
 }
