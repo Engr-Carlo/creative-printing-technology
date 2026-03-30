@@ -1,8 +1,44 @@
 "use client";
 
-import { useState, useTransition, useEffect, useCallback } from "react";
-import { RefreshCw, Flame, AlertTriangle, Clock, PackageX } from "lucide-react";
+import { useState, useTransition, useEffect, useCallback, useRef } from "react";
+import { RefreshCw, Flame, AlertTriangle, Clock, PackageX, RotateCcw } from "lucide-react";
 import { getSJFQueue, type SJFEntry } from "@/app/actions/sjf";
+import { SJFComputationOverlay } from "./SJFComputationOverlay";
+
+// ─── LocalStorage — track which item IDs have been seen ──────────────────────
+
+const STORAGE_KEY = "cpt_sjf_seen_v1";
+
+function getSeenIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+  } catch { return new Set(); }
+}
+
+function markAsSeen(ids: string[]) {
+  if (typeof window === "undefined") return;
+  try {
+    const all = getSeenIds();
+    ids.forEach((id) => all.add(id));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...all]));
+  } catch { /* ignore */ }
+}
+
+function clearSeenIds() {
+  if (typeof window === "undefined") return;
+  try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+}
+
+// ─── Client-side sort (mirrors server sort — defensive) ──────────────────────
+
+function sortQueue(data: SJFEntry[]): SJFEntry[] {
+  return [...data].sort((a, b) => {
+    if (b.priorityScore !== a.priorityScore) return b.priorityScore - a.priorityScore;
+    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+  });
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -123,26 +159,59 @@ function FormulaCard() {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function JobQueueTable() {
-  const [queue, setQueue]     = useState<SJFEntry[]>([]);
-  const [loaded, setLoaded]   = useState(false);
-  const [isPending, start]    = useTransition();
-  const [lastRefresh, setLast] = useState<Date | null>(null);
+  const [queue, setQueue]           = useState<SJFEntry[]>([]);
+  const [loaded, setLoaded]         = useState(false);
+  const [isPending, start]          = useTransition();
+  const [lastRefresh, setLast]      = useState<Date | null>(null);
+  const [newJobs, setNewJobs]       = useState<SJFEntry[]>([]);
+  const [showOverlay, setShowOverlay] = useState(false);
+  // When true, treats ALL jobs as unseen (used by Recompute All)
+  const forceAllRef = useRef(false);
 
   const load = useCallback(() => {
     start(async () => {
-      const data = await getSJFQueue();
-      setQueue(data);
+      const raw    = await getSJFQueue();
+      const sorted = sortQueue(raw); // defensive client-side sort
+
+      setQueue(sorted);
       setLoaded(true);
       setLast(new Date());
+
+      // Detect new jobs
+      const seenIds    = forceAllRef.current ? new Set<string>() : getSeenIds();
+      forceAllRef.current = false;
+
+      const discovered = sorted.filter((j) => !seenIds.has(j.id));
+      if (discovered.length > 0) {
+        setNewJobs(discovered);
+        setShowOverlay(true);
+      }
+
+      markAsSeen(sorted.map((j) => j.id));
     });
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
+  function recomputeAll() {
+    clearSeenIds();
+    forceAllRef.current = true;
+    load();
+  }
+
   const criticalCount = queue.filter((j) => j.agingTier === "CRITICAL").length;
   const agingCount    = queue.filter((j) => j.agingTier === "AGING").length;
 
   return (
+    <>
+      {/* Computation overlay — only for new/unseen jobs */}
+      {showOverlay && newJobs.length > 0 && (
+        <SJFComputationOverlay
+          newJobs={newJobs}
+          onClose={() => setShowOverlay(false)}
+        />
+      )}
+
     <div className="space-y-5 p-6">
       {/* Formula */}
       <FormulaCard />
@@ -175,14 +244,25 @@ export function JobQueueTable() {
           )}
         </div>
 
-        <button
-          onClick={load}
-          disabled={isPending}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg border border-gray-200 text-[12px] font-medium text-gray-600 hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isPending ? "animate-spin" : ""}`} />
-          {isPending ? "Computing…" : "Refresh"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={recomputeAll}
+            disabled={isPending}
+            title="Clear history and replay computation animation for all jobs"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-[12px] font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 active:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Recompute
+          </button>
+          <button
+            onClick={load}
+            disabled={isPending}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg border border-gray-200 text-[12px] font-medium text-gray-600 hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isPending ? "animate-spin" : ""}`} />
+            {isPending ? "Computing…" : "Refresh"}
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -347,9 +427,12 @@ export function JobQueueTable() {
           className="animate-fade-in text-[11px] text-gray-400 text-center"
           style={{ animationDelay: `${200 + queue.length * 40 + 100}ms` }}
         >
-          Jobs are sorted by descending P(j). Ties are resolved by earliest deadline first.
+          Sorted by descending P(j) — ties resolved by earliest deadline first.{" "}
+          Use <span className="font-medium text-gray-500">Recompute</span> to replay the
+          computation animation for all jobs.
         </p>
       )}
     </div>
+    </>
   );
 }
