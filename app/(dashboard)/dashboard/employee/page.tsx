@@ -45,6 +45,8 @@ async function getLineLeaderData() {
           name: true,
           order: true,
           status: true,
+          startedAt: true,
+          completedAt: true,
           machine: { select: { name: true } },
           notes: {
             select: { id: true, content: true, createdAt: true, user: { select: { name: true } } },

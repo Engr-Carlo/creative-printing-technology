@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Cog, Monitor, BarChart2 } from "lucide-react";
+import { Cog, Monitor, BarChart2, Clock, CheckCircle } from "lucide-react";
 import { ProcessStatusButton } from "@/components/ProcessStatusButton";
 import ProcessNoteCell from "@/components/ProcessNoteCell";
 import { ProcessQueueDrawer } from "@/components/ProcessQueueDrawer";
@@ -27,6 +27,8 @@ interface Process {
   name: string;
   order: number;
   status: string;
+  startedAt?: Date | null;
+  completedAt?: Date | null;
   machine?: { name: string } | null;
   notes?: { id: string; content: string; createdAt: Date; user: { name: string } }[];
 }
@@ -138,6 +140,18 @@ export function ProcessEvaluationPanel({ itemId, itemType, itemStatus, rawMateri
                           <Monitor className="w-2.5 h-2.5" />
                           {proc.machine?.name || "—"}
                         </span>
+                        {proc.startedAt && (
+                          <span className="flex items-center gap-1 text-blue-500">
+                            <Clock className="w-2.5 h-2.5" />
+                            Started {new Date(proc.startedAt).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        )}
+                        {proc.completedAt && (
+                          <span className="flex items-center gap-1 text-green-600">
+                            <CheckCircle className="w-2.5 h-2.5" />
+                            Done {new Date(proc.completedAt).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        )}
                       </div>
                     </div>
 
