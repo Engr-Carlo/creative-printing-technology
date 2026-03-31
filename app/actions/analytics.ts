@@ -53,9 +53,12 @@ export async function getProcessQueueData(
   });
 
   const entries: ProcessQueueEntry[] = processes.map((p) => {
-    // Arrival time = previous process's completedAt, or item.createdAt for first process
+    // Arrival time = previous process's completedAt (null if not yet completed),
+    // or item.createdAt only for the very first process (no predecessor).
     const prevProcess = p.item.processes.find((ip) => ip.order === p.order - 1);
-    const arrivalRaw = prevProcess?.completedAt ?? p.item.createdAt;
+    const arrivalRaw = prevProcess !== undefined
+      ? prevProcess.completedAt   // null until the previous process finishes
+      : p.item.createdAt;         // first process: arrived when the item was created
 
     const waitingMinutes =
       p.startedAt && arrivalRaw
