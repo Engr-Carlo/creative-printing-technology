@@ -20,7 +20,43 @@ export interface ProcessQueueAnalysis {
   dataDays: number;           // how many days of data were used
 }
 
+/** Extended analysis used by the Queue Constraint Dashboard page */
+export interface StageAnalysis extends ProcessQueueAnalysis {
+  /** Per-day ρ (M/M/1) ordered oldest → newest for the chosen window */
+  sparkMm1: number[];
+  /** Per-day ρ (M/M/2) ordered oldest → newest for the chosen window */
+  sparkMm2: number[];
+  actionMm1: string; // recommended action given rho_mm1
+  actionMm2: string; // recommended action given rho_mm2
+}
+
+/** All seven production process type names, in order */
+const PROCESS_TYPES = [
+  "Cutting",
+  "Printing",
+  "Pre-Fold/Inspection",
+  "Trimming",
+  "Folding",
+  "Stitching",
+  "Inspection",
+] as const;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getRecommendedAction(rho: number, model: "mm1" | "mm2"): string {
+  if (rho === 0) return "No data — cannot assess this stage";
+  if (model === "mm1") {
+    if (rho < 0.5)   return "Stage under-utilized — no action needed";
+    if (rho <= 0.63) return "Monitor closely — approaching capacity";
+    if (rho < 1)     return "Consider adding a 2nd operator (M/M/2 upgrade)";
+    return "Critical bottleneck — add parallel server immediately";
+  } else {
+    if (rho < 0.5)   return "Reallocate staff to higher-load stages";
+    if (rho <= 0.63) return "Monitor closely — at stability boundary";
+    if (rho < 1)     return "Increase operator capacity at this stage";
+    return "Stage overloaded — immediate escalation required";
+  }
+}
 
 // Erlang-C P0 for M/M/2 (s=2)
 function computeP0mm2(a: number): number {
@@ -148,18 +184,8 @@ export async function getProcessTypeAnalysis(
 export async function getAllProcessTypeHealth(): Promise<
   { name: string; rho_mm1: number; rho_mm2: number; stable_mm1: boolean; insufficientData: boolean }[]
 > {
-  const types = [
-    "Cutting",
-    "Printing",
-    "Pre-Fold/Inspection",
-    "Trimming",
-    "Folding",
-    "Stitching",
-    "Inspection",
-  ];
-
   const results = await Promise.all(
-    types.map(async (t) => {
+    PROCESS_TYPES.map(async (t) => {
       const a = await getProcessTypeAnalysis(t);
       return {
         name: t,
@@ -172,6 +198,112 @@ export async function getAllProcessTypeHealth(): Promise<
   );
 
   return results;
+}
+
+/**
+ * Fetches full StageAnalysis for all process types in a single DB query.
+ * Includes per-day sparkline data and recommended actions.
+ * Used by the Queue Constraint Dashboard page.
+ */
+export async function getDashboardAnalysis(
+  windowDays: number = 7
+): Promise<StageAnalysis[]> {
+  const session = await auth();
+  if (!session?.user) return [];
+  const role = (session.user as any).role;
+  if (role !== "ADMIN" && role !== "EMPLOYEE") return [];
+
+  const since = new Date(Date.now() - windowDays * 86_400_000);
+
+  // Single query for all process types
+  const updates = await prisma.processUpdate.findMany({
+    where: {
+      createdAt: { gte: since },
+      process: { name: { in: [...PROCESS_TYPES] } },
+    },
+    select: {
+      createdAt: true,
+      newStatus: true,
+      process: { select: { name: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return PROCESS_TYPES.map((typeName) => {
+    const typeUpdates = updates.filter((u) => u.process.name === typeName);
+
+    // Build per-day buckets oldest → newest
+    const days: { dayKey: string; started: number; completed: number }[] = [];
+    for (let d = windowDays - 1; d >= 0; d--) {
+      const dt = new Date(Date.now() - d * 86_400_000);
+      days.push({ dayKey: dt.toISOString().slice(0, 10), started: 0, completed: 0 });
+    }
+    for (const u of typeUpdates) {
+      const key = u.createdAt.toISOString().slice(0, 10);
+      const bucket = days.find((d) => d.dayKey === key);
+      if (bucket) {
+        if (u.newStatus === "IN_PROGRESS") bucket.started++;
+        if (u.newStatus === "COMPLETED")   bucket.completed++;
+      }
+    }
+
+    const totalStarted   = days.reduce((s, d) => s + d.started,   0);
+    const totalCompleted = days.reduce((s, d) => s + d.completed, 0);
+    const activeDays     = days.filter((d) => d.started > 0 || d.completed > 0).length;
+    const dataDays       = activeDays;
+    const insufficientData = dataDays < 3 || (totalStarted === 0 && totalCompleted === 0);
+    const span   = Math.max(dataDays, 1);
+    const lambda = totalStarted   / span;
+    const mu     = totalCompleted / span;
+
+    const sparkMm1 = days.map((d) =>
+      d.completed > 0 ? parseFloat((d.started / d.completed).toFixed(3)) : 0
+    );
+    const sparkMm2 = days.map((d) =>
+      d.completed > 0 ? parseFloat((d.started / (2 * d.completed)).toFixed(3)) : 0
+    );
+
+    if (mu === 0 || lambda === 0) {
+      return {
+        processTypeName: typeName,
+        lambda,
+        mu,
+        rho_mm1: 0,
+        rho_mm2: 0,
+        wq_mm1: null,
+        wq_mm2: null,
+        stable_mm1: true,
+        stable_mm2: true,
+        insufficientData: true,
+        dataDays,
+        sparkMm1,
+        sparkMm2,
+        actionMm1: getRecommendedAction(0, "mm1"),
+        actionMm2: getRecommendedAction(0, "mm2"),
+      };
+    }
+
+    const rho_mm1 = lambda / mu;
+    const rho_mm2 = lambda / (2 * mu);
+
+    return {
+      processTypeName: typeName,
+      lambda,
+      mu,
+      rho_mm1,
+      rho_mm2,
+      wq_mm1: rho_mm1 < 1 ? lambda / (mu * (mu - lambda)) : null,
+      wq_mm2: computeWqMm2(lambda, mu),
+      stable_mm1: rho_mm1 < 1,
+      stable_mm2: rho_mm2 < 1,
+      insufficientData,
+      dataDays,
+      sparkMm1,
+      sparkMm2,
+      actionMm1: getRecommendedAction(rho_mm1, "mm1"),
+      actionMm2: getRecommendedAction(rho_mm2, "mm2"),
+    };
+  });
 }
 
 /**

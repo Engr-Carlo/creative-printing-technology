@@ -12,6 +12,7 @@ import {
   Building2,
   Boxes,
   ListOrdered,
+  Activity,
 } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -29,8 +30,9 @@ const navigation = [
   { name: "Inventory", href: "/dashboard/inventory", icon: Boxes, roles: ["ADMIN"] },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["ADMIN"] },
   { name: "Users", href: "/dashboard/users", icon: Users, roles: ["ADMIN"] },
-  { name: "Job Queue", href: "/dashboard/queue", icon: ListOrdered, roles: ["ADMIN"] },
-  
+  { name: "Job Queue",      href: "/dashboard/queue",          icon: ListOrdered, roles: ["ADMIN"] },
+  { name: "Queue Analysis", href: "/dashboard/queue-analysis", icon: Activity,    roles: ["ADMIN", "EMPLOYEE"] },
+
   // Encoder navigation
   { name: "Dashboard", href: "/dashboard/encoder", icon: LayoutDashboard, roles: ["ENCODER"] },
   { name: "Items", href: "/dashboard/items", icon: Package, roles: ["ENCODER"] },
@@ -38,7 +40,7 @@ const navigation = [
   // Employee / Line Leader navigation
   { name: "Dashboard", href: "/dashboard/employee", icon: LayoutDashboard, roles: ["EMPLOYEE"] },
   { name: "Job Queue", href: "/dashboard/queue", icon: ListOrdered, roles: ["EMPLOYEE"] },
-  
+
   // Common for all
   { name: "Settings", href: "/dashboard/settings", icon: Settings, roles: ["ADMIN", "ENCODER", "EMPLOYEE"] },
 ];
