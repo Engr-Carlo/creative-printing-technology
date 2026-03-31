@@ -73,12 +73,12 @@ export default async function DashboardPage() {
     <div className="min-h-full bg-gray-50">
 
       {/* ── Command Center Header ── */}
-      <div className="bg-gradient-to-br from-primary to-orange-600 text-white px-5 py-5">
+      <div className="bg-gradient-to-br from-gray-900 to-slate-800 text-white px-5 py-5">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-100">Production Command Center</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400">Production Command Center</p>
             <h1 className="text-xl font-black mt-0.5">Dashboard Overview</h1>
-            <p className="text-xs text-orange-100 mt-0.5">Real-time production monitoring</p>
+            <p className="text-xs text-gray-400 mt-0.5">Real-time production monitoring</p>
           </div>
           <Link
             href="/dashboard/items"
@@ -91,14 +91,14 @@ export default async function DashboardPage() {
         {/* Big stat pills */}
         <div className="grid grid-cols-5 gap-2">
           {[
-            { label: "Total",      value: total,      color: "bg-white/20 border-white/30",            num: "text-white"      },
-            { label: "Pending",    value: pending,    color: "bg-yellow-500/20 border-yellow-400/40",  num: "text-yellow-200" },
-            { label: "In Progress",value: inProgress, color: "bg-white/10    border-white/20",         num: "text-white"      },
-            { label: "Completed",  value: completed,  color: "bg-green-500/20  border-green-400/40",  num: "text-green-200"  },
-            { label: "Rejected",   value: rejected,   color: "bg-red-500/20    border-red-400/40",    num: "text-red-200"    },
+            { label: "Total",       value: total,      color: "bg-white/10  border-white/20",           num: "text-white"      },
+            { label: "Pending",     value: pending,    color: "bg-yellow-500/20 border-yellow-400/30",  num: "text-yellow-300" },
+            { label: "In Progress", value: inProgress, color: "bg-orange-500/20 border-orange-400/30", num: "text-orange-300" },
+            { label: "Completed",   value: completed,  color: "bg-green-500/20  border-green-400/30",  num: "text-green-300"  },
+            { label: "Rejected",    value: rejected,   color: "bg-red-500/20    border-red-400/30",    num: "text-red-300"    },
           ].map((s) => (
             <div key={s.label} className={`rounded-xl border px-3 py-2.5 ${s.color}`}>
-              <p className="text-[9px] uppercase tracking-widest text-orange-100 font-bold">{s.label}</p>
+              <p className="text-[9px] uppercase tracking-widest text-gray-400 font-bold">{s.label}</p>
               <p className={`text-2xl font-black ${s.num}`}>{s.value}</p>
             </div>
           ))}
