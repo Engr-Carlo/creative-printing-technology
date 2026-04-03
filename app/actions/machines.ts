@@ -4,6 +4,17 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
+// ─── Which process names each machine type runs ──────────────────────────────
+// Based on the production floor: R1-R6 = Printing Press, Polar Cutter = Cutting,
+// MB01-MB04 = Folding, Muller Martini = Stitching
+export const MACHINE_PROCESS_AFFINITY: Record<string, string[]> = {
+  "Printing Press":    ["Printing"],
+  "Cutting Machine":   ["Cutting", "Trimming"],
+  "Folding Machine":   ["Folding", "Pre-Fold/Inspection"],
+  "Stitching Machine": ["Stitching"],
+  "Other":             [],
+};
+
 export interface MachineCurrentJob {
   processId: string;
   processName: string;
@@ -19,9 +30,20 @@ export interface MachineWithStatus {
   type: string;
   isActive: boolean;
   department: { id: string; name: string };
+  /** Set only when Process.machineId is explicitly linked to this machine */
   currentJob: MachineCurrentJob | null;
+  /** Total completed processes today for this machine's process type (fleet-wide ÷ fleet size) */
   todayCompletedCount: number;
+  /** Number of MACHINE_BREAKDOWN delays reported in the last 30 days on this machine */
   recentBreakdownCount: number;
+  /** Process steps this machine type handles e.g. ["Printing"] */
+  handlesProcesses: string[];
+  /**
+   * Count of IN_PROGRESS processes (floor-wide, for this machine's process type)
+   * divided proportionally across machines of the same type.
+   * Used to visualise load when machineId FK is not set.
+   */
+  fleetActiveEstimate: number;
 }
 
 export async function getMachinesData(): Promise<MachineWithStatus[]> {
@@ -35,6 +57,7 @@ export async function getMachinesData(): Promise<MachineWithStatus[]> {
     orderBy: [{ type: "asc" }, { name: "asc" }],
     include: {
       department: { select: { id: true, name: true } },
+      // Direct machineId-linked IN_PROGRESS processes (most accurate when set)
       processes: {
         where: { status: "IN_PROGRESS" },
         take: 1,
@@ -47,54 +70,72 @@ export async function getMachinesData(): Promise<MachineWithStatus[]> {
     },
   });
 
-  // Batch queries for today's completions and recent breakdowns per machine
-  const machineIds = machines.map((m) => m.id);
+  // ── Fleet-level stats by process name affinity ───────────────────────────
+  // Collect all unique process names used across all machine types
+  const allAffinityNames = Array.from(
+    new Set(Object.values(MACHINE_PROCESS_AFFINITY).flat())
+  );
 
-  const [todayCompletions, breakdowns] = await Promise.all([
+  const [affinityActive, affinityCompleted, machineBreakdowns] = await Promise.all([
+    // Count IN_PROGRESS processes by name (fleet-wide, not per machine)
     prisma.process.groupBy({
-      by: ["machineId"],
+      by: ["name"],
+      where: { name: { in: allAffinityNames }, status: "IN_PROGRESS" },
+      _count: { id: true },
+    }),
+    // Count COMPLETED processes today by name
+    prisma.process.groupBy({
+      by: ["name"],
       where: {
-        machineId: { in: machineIds },
+        name: { in: allAffinityNames },
         status: "COMPLETED",
         completedAt: { gte: todayMidnight },
       },
       _count: { id: true },
     }),
-    prisma.delayReason.groupBy({
-      by: ["processId"],
+    // MACHINE_BREAKDOWN delays per machine via machineId FK
+    prisma.delayReason.findMany({
       where: {
         category: "MACHINE_BREAKDOWN",
         createdAt: { gte: thirtyDaysAgo },
-        process: { machineId: { in: machineIds } },
+        process: { machineId: { in: machines.map((m) => m.id) } },
       },
-      _count: { id: true },
+      select: { process: { select: { machineId: true } } },
     }),
   ]);
 
-  // Map breakdown counts by machineId via a second query
-  const breakdownProcessIds = breakdowns.map((b) => b.processId);
-  const breakdownProcesses = breakdownProcessIds.length > 0
-    ? await prisma.process.findMany({
-        where: { id: { in: breakdownProcessIds } },
-        select: { id: true, machineId: true },
-      })
-    : [];
+  // Build maps: processName → count
+  const activeByName: Record<string, number> = {};
+  for (const r of affinityActive) activeByName[r.name] = r._count.id;
 
-  // Build a machineId → breakdownCount map
+  const completedByName: Record<string, number> = {};
+  for (const r of affinityCompleted) completedByName[r.name] = r._count.id;
+
+  // Build map: machineId → breakdown count
   const breakdownByMachine: Record<string, number> = {};
-  for (const bp of breakdownProcesses) {
-    if (!bp.machineId) continue;
-    const entry = breakdowns.find((b) => b.processId === bp.id);
-    breakdownByMachine[bp.machineId] =
-      (breakdownByMachine[bp.machineId] ?? 0) + (entry?._count.id ?? 0);
+  for (const d of machineBreakdowns) {
+    const mid = d.process?.machineId;
+    if (mid) breakdownByMachine[mid] = (breakdownByMachine[mid] ?? 0) + 1;
   }
 
-  const completionByMachine: Record<string, number> = {};
-  for (const c of todayCompletions) {
-    if (c.machineId) completionByMachine[c.machineId] = c._count.id;
+  // Count machines per type (for fair proportional distribution)
+  const countByType: Record<string, number> = {};
+  for (const m of machines) {
+    countByType[m.type] = (countByType[m.type] ?? 0) + (m.isActive ? 1 : 0);
   }
 
   return machines.map((m) => {
+    const handles = MACHINE_PROCESS_AFFINITY[m.type] ?? [];
+    const fleetCount = countByType[m.type] || 1;
+
+    // Sum fleet-wide active and completed for all process names in affinity
+    const fleetActiveTotal = handles.reduce((acc, name) => acc + (activeByName[name] ?? 0), 0);
+    const fleetCompletedTotal = handles.reduce((acc, name) => acc + (completedByName[name] ?? 0), 0);
+
+    // Distribute proportionally across active machines of this type
+    const fleetActiveEstimate = Math.round(fleetActiveTotal / fleetCount);
+    const todayCompletedCount = Math.round(fleetCompletedTotal / fleetCount);
+
     const active = m.processes[0];
     return {
       id: m.id,
@@ -112,8 +153,10 @@ export async function getMachinesData(): Promise<MachineWithStatus[]> {
             startedAt: active.startedAt?.toISOString() ?? null,
           }
         : null,
-      todayCompletedCount: completionByMachine[m.id] ?? 0,
+      todayCompletedCount,
       recentBreakdownCount: breakdownByMachine[m.id] ?? 0,
+      handlesProcesses: handles,
+      fleetActiveEstimate,
     };
   });
 }
