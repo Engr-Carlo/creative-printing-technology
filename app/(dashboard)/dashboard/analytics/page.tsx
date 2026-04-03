@@ -5,7 +5,6 @@ import { BarChart3, TrendingUp, Package, Clock, Users, CheckCircle2 } from "luci
 import prisma from "@/lib/prisma";
 import { ProductionTrendChart } from "@/components/charts/ProductionTrendChart";
 import { ItemDistributionChart } from "@/components/charts/ItemDistributionChart";
-import { ProcessQueuePanel } from "@/components/analytics/ProcessQueuePanel";
 
 async function getAnalytics() {
   // Single batch: 3 queries instead of 29
@@ -122,9 +121,6 @@ export default async function AnalyticsPage() {
         <h1 className="text-lg font-bold text-gray-900">Analytics Dashboard</h1>
         <p className="text-xs text-muted-foreground">Production metrics and performance overview</p>
       </div>
-
-      {/* Process Queue Monitor */}
-      <ProcessQueuePanel />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
