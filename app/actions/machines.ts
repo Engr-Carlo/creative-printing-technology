@@ -3,17 +3,7 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-
-// ─── Which process names each machine type runs ──────────────────────────────
-// Based on the production floor: R1-R6 = Printing Press, Polar Cutter = Cutting,
-// MB01-MB04 = Folding, Muller Martini = Stitching
-export const MACHINE_PROCESS_AFFINITY: Record<string, string[]> = {
-  "Printing Press":    ["Printing"],
-  "Cutting Machine":   ["Cutting", "Trimming"],
-  "Folding Machine":   ["Folding", "Pre-Fold/Inspection"],
-  "Stitching Machine": ["Stitching"],
-  "Other":             [],
-};
+import { MACHINE_PROCESS_AFFINITY } from "@/lib/constants/machines";
 
 export interface MachineCurrentJob {
   processId: string;
