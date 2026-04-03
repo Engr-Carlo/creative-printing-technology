@@ -83,7 +83,7 @@ export function ItemsClient({ items, isAdmin }: { items: ItemRow[]; isAdmin: boo
         </div>
       )}
 
-      {/* Search + Status filter bar */}}
+      {/* Search + Status filter bar */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Search */}
         <div className="relative flex-1 min-w-[180px]">
