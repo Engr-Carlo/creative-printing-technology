@@ -8,7 +8,6 @@ import {
   Package,
   Settings,
   BarChart3,
-  Users,
   Building2,
   Boxes,
   ListOrdered,
@@ -29,7 +28,6 @@ const navigation = [
   { name: "Items", href: "/dashboard/items", icon: Package, roles: ["ADMIN"] },
   { name: "Inventory", href: "/dashboard/inventory", icon: Boxes, roles: ["ADMIN"] },
   { name: "Analytics",     href: "/dashboard/analytics",      icon: BarChart3,   roles: ["ADMIN"] },
-  { name: "Users",         href: "/dashboard/users",          icon: Users,       roles: ["ADMIN"] },
   { name: "Job Queue",      href: "/dashboard/queue",          icon: ListOrdered, roles: ["ADMIN"] },
   { name: "Queue Analysis", href: "/dashboard/queue-analysis", icon: Activity,    roles: ["ADMIN", "EMPLOYEE"] },
 
@@ -42,7 +40,7 @@ const navigation = [
   { name: "Job Queue", href: "/dashboard/queue", icon: ListOrdered, roles: ["EMPLOYEE"] },
 
   // Common for all
-  { name: "Settings", href: "/dashboard/settings", icon: Settings, roles: ["ADMIN", "ENCODER", "EMPLOYEE"] },
+  { name: "Settings", href: "/dashboard/settings", icon: Settings, roles: ["ENCODER", "EMPLOYEE"] },
 ];
 
 export default function DashboardSidebar({ user }: DashboardSidebarProps) {
