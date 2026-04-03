@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,6 @@ const TYPES = [
 ];
 
 export function QuickGenerateButton() {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState<{ itemId: string; itemNumber: string } | null>(null);
@@ -83,16 +81,12 @@ export function QuickGenerateButton() {
     }
   }
 
-  function handleGoToItem() {
-    setOpen(false);
-    router.push(`/dashboard/items/${generated!.itemId}`);
-  }
-
-  function handleGoToEmployee() {
-    setOpen(false);
-    router.push(`/dashboard/employee`);
-    router.refresh();
-  }
+  // Auto-dismiss 2.5 s after item is generated
+  useEffect(() => {
+    if (!generated) return;
+    const t = setTimeout(() => setOpen(false), 2500);
+    return () => clearTimeout(t);
+  }, [generated]);
 
   const selectedType = TYPES.find((t) => t.value === form.type);
 
@@ -113,19 +107,14 @@ export function QuickGenerateButton() {
           </DialogHeader>
 
           {generated ? (
-            <div className="space-y-4 py-2">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-2" />
-                <p className="text-sm text-gray-600">Item generated successfully!</p>
-                <p className="text-xl font-bold font-mono text-green-700 mt-1">{generated.itemNumber}</p>
+            <div className="py-8 flex flex-col items-center text-center gap-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="w-9 h-9 text-green-500" />
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleGoToEmployee} className="flex-1">
-                  Open Line Leader View
-                </Button>
-                <Button onClick={handleGoToItem} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white">
-                  View Item
-                </Button>
+              <div>
+                <p className="text-sm font-semibold text-gray-700">Item created successfully!</p>
+                <p className="text-2xl font-black font-mono text-green-700 mt-1">{generated.itemNumber}</p>
+                <p className="text-xs text-gray-400 mt-2">Closing in a moment…</p>
               </div>
             </div>
           ) : (

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Package, Clock, CheckCircle2, AlertCircle, FolderOpen } from "lucide-react";
+import { Package, Clock, CheckCircle2, AlertCircle, ShieldCheck } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { QuickGenerateButton } from "@/components/QuickGenerateButton";
 import { ItemsClient } from "@/components/ItemsClient";
@@ -47,12 +47,12 @@ export default async function ItemsPage() {
       <div className="bg-white border-b px-5 py-5">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Item Management</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Quality Assurance</p>
             <h1 className="text-xl font-black mt-0.5 text-gray-900 flex items-center gap-2">
-              <FolderOpen className="w-5 h-5 text-primary" />
-              Items Workspace
+              <ShieldCheck className="w-5 h-5 text-primary" />
+              QA Release Center
             </h1>
-            <p className="text-xs text-gray-500 mt-0.5">Create, search, filter and manage all production jobs</p>
+            <p className="text-xs text-gray-500 mt-0.5">Review items and release raw materials — give line leaders the go signal</p>
           </div>
           <QuickGenerateButton />
         </div>

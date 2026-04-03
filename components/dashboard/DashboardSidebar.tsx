@@ -12,6 +12,7 @@ import {
   Boxes,
   ListOrdered,
   Activity,
+  ShieldCheck,
 } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -25,7 +26,7 @@ interface DashboardSidebarProps {
 const navigation = [
   // Admin navigation
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN"] },
-  { name: "Items", href: "/dashboard/items", icon: Package, roles: ["ADMIN"] },
+  { name: "QA Release", href: "/dashboard/items", icon: ShieldCheck, roles: ["ADMIN"] },
   { name: "Inventory", href: "/dashboard/inventory", icon: Boxes, roles: ["ADMIN"] },
   { name: "Analytics",     href: "/dashboard/analytics",      icon: BarChart3,   roles: ["ADMIN"] },
   { name: "Job Queue",      href: "/dashboard/queue",          icon: ListOrdered, roles: ["ADMIN"] },
