@@ -13,9 +13,11 @@ const RAW_MATERIAL_OPTIONS = [
 export function RawMaterialsSelect({
   itemId,
   currentStatus,
+  itemCompleted = false,
 }: {
   itemId: string;
   currentStatus: string;
+  itemCompleted?: boolean;
 }) {
   const [status, setStatus] = useState(currentStatus);
   const [isPending, startTransition] = useTransition();
@@ -38,8 +40,9 @@ export function RawMaterialsSelect({
     <select
       value={status}
       onChange={handleChange}
-      disabled={isPending}
-      className={`text-xs font-semibold rounded-md border px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:opacity-50 ${currentOption?.color || "bg-gray-100 text-gray-800 border-gray-300"}`}
+      disabled={isPending || itemCompleted}
+      title={itemCompleted ? "Cannot change release status — item is completed" : undefined}
+      className={`text-xs font-semibold rounded-md border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${itemCompleted ? "cursor-not-allowed" : "cursor-pointer"} ${currentOption?.color || "bg-gray-100 text-gray-800 border-gray-300"}`}
     >
       {RAW_MATERIAL_OPTIONS.map((option) => (
         <option key={option.value} value={option.value}>

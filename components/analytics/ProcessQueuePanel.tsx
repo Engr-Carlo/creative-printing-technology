@@ -58,9 +58,18 @@ export function ProcessQueuePanel() {
 
   const metrics = queueData?.metrics;
   const entries = queueData?.entries ?? [];
+
+  // Filter table rows to the observation window (+ always show in-progress)
+  const windowMs = filterHours * 3600000;
+  const windowEntries = entries.filter((e) => {
+    if (e.status === "IN_PROGRESS") return true;
+    if (!e.arrivalTime) return false;
+    return Date.now() - new Date(e.arrivalTime).getTime() <= windowMs;
+  });
+
   const completionPct =
-    metrics && metrics.total > 0
-      ? Math.round((metrics.completed / metrics.total) * 100)
+    windowEntries.length > 0
+      ? Math.round((windowEntries.filter((e) => e.status === "COMPLETED").length / windowEntries.length) * 100)
       : 0;
 
   return (
@@ -194,7 +203,10 @@ export function ProcessQueuePanel() {
                 </div>
               </div>
               <span className="text-xs font-semibold text-gray-600 whitespace-nowrap">
-                {metrics ? `${metrics.completed}/${metrics.total}` : "0/0"}
+                {windowEntries.filter((e) => e.status === "COMPLETED").length}/{windowEntries.length}
+              </span>
+              <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                last {filterHours === 1 ? "1 hr" : "30 min"}
               </span>
             </div>
           </div>
@@ -206,7 +218,7 @@ export function ProcessQueuePanel() {
                 <div className="w-5 h-5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin mr-2" />
                 Loading queue...
               </div>
-            ) : entries.length === 0 ? (
+            ) : windowEntries.length === 0 ? (
               <div className="py-12 text-center">
                 <Clock className="w-10 h-10 text-gray-200 mx-auto mb-2" />
                 <p className="text-sm text-gray-400">No job requests at this stage yet.</p>
@@ -215,17 +227,21 @@ export function ProcessQueuePanel() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-gray-50">
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide" colSpan={6}>
+                      <span className="font-normal text-gray-400">Showing jobs that arrived in the last {filterHours === 1 ? "hour" : "30 minutes"}</span>
+                    </th>
+                  </tr>
+                  <tr className="border-b bg-gray-50">
                     <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">JR #</th>
                     <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Job Name</th>
                     <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Arrival Time</th>
                     <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Start Time</th>
                     <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Completion Time</th>
-                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Wait</th>
                     <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {entries.map((entry, i) => {
+                  {windowEntries.map((entry, i) => {
                     const sCfg = statusConfig[entry.status as keyof typeof statusConfig];
                     const SIcon = sCfg?.icon ?? Clock;
                     return (
@@ -258,11 +274,6 @@ export function ProcessQueuePanel() {
                         </td>
                         <td className="py-2.5 px-4 text-xs text-gray-600 whitespace-nowrap">
                           {fmtTime(entry.completionTime)}
-                        </td>
-                        <td className="py-2.5 px-4 text-xs text-gray-500 whitespace-nowrap">
-                          {entry.waitingMinutes !== null
-                            ? `${entry.waitingMinutes} min`
-                            : <span className="text-gray-300">—</span>}
                         </td>
                         <td className="py-2.5 px-4">
                           <span

@@ -13,6 +13,7 @@ import {
   ListOrdered,
   Activity,
   ShieldCheck,
+  BarChart2,
 } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -29,8 +30,9 @@ const navigation = [
   { name: "QA Release", href: "/dashboard/items", icon: ShieldCheck, roles: ["ADMIN"] },
   { name: "Inventory", href: "/dashboard/inventory", icon: Boxes, roles: ["ADMIN"] },
   { name: "Analytics",     href: "/dashboard/analytics",      icon: BarChart3,   roles: ["ADMIN"] },
-  { name: "Job Queue",      href: "/dashboard/queue",          icon: ListOrdered, roles: ["ADMIN"] },
-  { name: "Queue Analysis", href: "/dashboard/queue-analysis", icon: Activity,    roles: ["ADMIN", "EMPLOYEE"] },
+  { name: "Job Queue",           href: "/dashboard/queue",               icon: ListOrdered, roles: ["ADMIN"] },
+  { name: "Queue Analysis",      href: "/dashboard/queue-analysis",      icon: Activity,    roles: ["ADMIN", "EMPLOYEE"] },
+  { name: "Constraint Analysis", href: "/dashboard/constraint-analysis", icon: BarChart2,   roles: ["ADMIN"] },
 
   // Encoder navigation
   { name: "Dashboard", href: "/dashboard/encoder", icon: LayoutDashboard, roles: ["ENCODER"] },

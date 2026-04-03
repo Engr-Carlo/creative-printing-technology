@@ -196,7 +196,7 @@ export function ItemsClient({ items, isAdmin }: { items: ItemRow[]; isAdmin: boo
                       </td>
                       <td className="py-2 px-3">
                         {isAdmin
-                          ? <RawMaterialsSelect itemId={item.id} currentStatus={item.rawMaterials} />
+                          ? <RawMaterialsSelect itemId={item.id} currentStatus={item.rawMaterials} itemCompleted={item.status === "COMPLETED"} />
                           : <RawMaterialsBadge status={item.rawMaterials} />}
                       </td>
                       <td className="py-2 px-3">
