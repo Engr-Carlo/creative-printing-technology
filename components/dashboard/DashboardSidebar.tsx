@@ -13,7 +13,6 @@ import {
   Boxes,
   ListOrdered,
   Activity,
-  Monitor,
 } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -30,7 +29,6 @@ const navigation = [
   { name: "Items", href: "/dashboard/items", icon: Package, roles: ["ADMIN"] },
   { name: "Inventory", href: "/dashboard/inventory", icon: Boxes, roles: ["ADMIN"] },
   { name: "Analytics",     href: "/dashboard/analytics",      icon: BarChart3,   roles: ["ADMIN"] },
-  { name: "Process Queue", href: "/dashboard/process-queue",  icon: Monitor,     roles: ["ADMIN"] },
   { name: "Users",         href: "/dashboard/users",          icon: Users,       roles: ["ADMIN"] },
   { name: "Job Queue",      href: "/dashboard/queue",          icon: ListOrdered, roles: ["ADMIN"] },
   { name: "Queue Analysis", href: "/dashboard/queue-analysis", icon: Activity,    roles: ["ADMIN", "EMPLOYEE"] },

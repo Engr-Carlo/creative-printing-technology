@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BarChart3, TrendingUp, Package, Clock, Users, CheckCircle2 } from "lucide-react";
+import { BarChart3, TrendingUp } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { ProductionTrendChart } from "@/components/charts/ProductionTrendChart";
 import { ItemDistributionChart } from "@/components/charts/ItemDistributionChart";
@@ -12,8 +12,7 @@ async function getAnalytics() {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   sevenDaysAgo.setHours(0, 0, 0, 0);
 
-  const [items, departments, totalUsers] = await Promise.all([
-    // 1 query: get all items with department (replaces 8 counts + 21 trend queries + recent activity)
+  const [items, departments] = await Promise.all([
     prisma.item.findMany({
       select: {
         id: true,
@@ -26,17 +25,10 @@ async function getAnalytics() {
       },
       orderBy: { updatedAt: "desc" },
     }),
-    // 2 query: departments
     prisma.department.findMany({ select: { id: true, name: true } }),
-    // 3 query: user count
-    prisma.user.count(),
   ]);
 
-  // Compute everything in-memory from the single items fetch
   const totalItems = items.length;
-  const completedItems = items.filter((i) => i.status === "COMPLETED").length;
-  const inProgressItems = items.filter((i) => i.status === "IN_PROGRESS").length;
-  const completionRate = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
   // Status counts
   const statusCounts: Record<string, number> = {};
@@ -83,19 +75,11 @@ async function getAnalytics() {
     };
   });
 
-  // Recent activity = first 10 items (already sorted by updatedAt desc)
-  const recentActivity = items.slice(0, 10);
-
   return {
     totalItems,
-    completedItems,
-    inProgressItems,
     totalDepartments: departments.length,
-    totalUsers,
-    completionRate,
     itemsByDepartment,
     itemsByStatus,
-    recentActivity,
     productionTrendData,
     departmentDistribution,
   };
@@ -120,66 +104,6 @@ export default async function AnalyticsPage() {
       <div>
         <h1 className="text-lg font-bold text-gray-900">Analytics Dashboard</h1>
         <p className="text-xs text-muted-foreground">Production metrics and performance overview</p>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="border bg-gradient-to-br from-blue-50 to-white">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-medium text-muted-foreground">Total Items</p>
-                <p className="text-xl font-bold text-blue-600">{analytics.totalItems}</p>
-              </div>
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Package className="w-4 h-4 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border bg-gradient-to-br from-green-50 to-white">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-medium text-muted-foreground">Completed</p>
-                <p className="text-xl font-bold text-green-600">{analytics.completedItems}</p>
-                <p className="text-[10px] text-muted-foreground">{analytics.completionRate}%</p>
-              </div>
-              <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border bg-gradient-to-br from-orange-50 to-white">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-medium text-muted-foreground">In Progress</p>
-                <p className="text-xl font-bold text-orange-600">{analytics.inProgressItems}</p>
-              </div>
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Clock className="w-4 h-4 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border bg-gradient-to-br from-purple-50 to-white">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-medium text-muted-foreground">Users</p>
-                <p className="text-xl font-bold text-purple-600">{analytics.totalUsers}</p>
-              </div>
-              <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                <Users className="w-4 h-4 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Charts Section */}
@@ -287,33 +211,6 @@ export default async function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Recent Activity */}
-      <Card className="border">
-        <CardHeader className="py-2 px-3">
-          <CardTitle className="text-xs font-semibold">Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent className="px-3 pb-3">
-          <div className="space-y-1">
-            {analytics.recentActivity.map((item) => (
-              <div key={item.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/50 text-[11px]">
-                <div className="flex items-center gap-2">
-                  <Package className="w-3 h-3 text-primary" />
-                  <span className="font-medium">{item.name}</span>
-                  <span className="text-muted-foreground">{item.department.name} • {item.itemNumber}</span>
-                </div>
-                <div className="text-right flex items-center gap-2">
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                    item.status === "COMPLETED" ? "bg-green-100 text-green-700" :
-                    item.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
-                    "bg-yellow-100 text-yellow-700"
-                  }`}>{item.status.replace("_", " ")}</span>
-                  <span className="text-muted-foreground text-[10px]">{new Date(item.updatedAt).toLocaleDateString()}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
