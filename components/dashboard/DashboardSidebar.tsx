@@ -14,6 +14,7 @@ import {
   Activity,
   ShieldCheck,
   BarChart2,
+  Cpu,
 } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -33,6 +34,7 @@ const navigation = [
   { name: "Job Queue",           href: "/dashboard/queue",               icon: ListOrdered, roles: ["ADMIN"] },
   { name: "Queue Analysis",      href: "/dashboard/queue-analysis",      icon: Activity,    roles: ["ADMIN", "EMPLOYEE"] },
   { name: "Constraint Analysis", href: "/dashboard/constraint-analysis", icon: BarChart2,   roles: ["ADMIN"] },
+  { name: "Machines",            href: "/dashboard/machines",            icon: Cpu,         roles: ["ADMIN", "EMPLOYEE", "ENCODER"] },
 
   // Encoder navigation
   { name: "Dashboard", href: "/dashboard/encoder", icon: LayoutDashboard, roles: ["ENCODER"] },
