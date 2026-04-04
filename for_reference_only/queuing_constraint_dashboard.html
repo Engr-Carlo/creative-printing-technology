@@ -1,0 +1,340 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.dash { padding: 1rem 0; }
+.header-bar { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 12px 16px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.header-title { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+.bottleneck-badge { background: #FCEBEB; color: #A32D2D; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: var(--border-radius-md); border: 0.5px solid #F09595; }
+.controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
+.controls label { font-size: 13px; color: var(--color-text-secondary); display: flex; align-items: center; gap: 6px; }
+.controls select { font-size: 13px; padding: 4px 8px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); }
+.controls input[type=checkbox] { cursor: pointer; }
+.table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px; }
+th { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); text-align: left; padding: 8px 10px; border-bottom: 0.5px solid var(--color-border-secondary); white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr.hidden { display: none; }
+.rho-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-weight: 500; font-size: 12px; }
+.rho-green { background: #EAF3DE; color: #27500A; }
+.rho-yellow { background: #FAEEDA; color: #633806; }
+.rho-red { background: #FCEBEB; color: #791F1F; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot-green { background: #639922; }
+.dot-yellow { background: #BA7517; }
+.dot-red { background: #E24B4A; }
+.stability-ok { color: #27500A; font-size: 15px; }
+.stability-bad { color: #A32D2D; font-size: 15px; }
+.action { font-size: 12px; color: var(--color-text-secondary); max-width: 160px; }
+.sparkline-cell { padding: 8px 10px; }
+canvas.spark { display: block; }
+.section-label { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.chart-area { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px 16px; margin-bottom: 1rem; }
+.alert-panel { background: #FCEBEB; border: 0.5px solid #F7C1C1; border-radius: var(--border-radius-lg); padding: 14px 16px; }
+.alert-title { font-size: 13px; font-weight: 500; color: #791F1F; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.alert-dot { width: 8px; height: 8px; border-radius: 50%; background: #E24B4A; flex-shrink: 0; }
+.alert-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; background: #fff; border: 0.5px solid #F7C1C1; border-radius: var(--border-radius-md); margin-bottom: 6px; flex-wrap: wrap; gap: 6px; }
+.alert-row:last-child { margin-bottom: 0; }
+.alert-stage { font-size: 13px; font-weight: 500; color: #791F1F; }
+.alert-detail { font-size: 12px; color: #A32D2D; }
+.alert-action { font-size: 12px; font-weight: 500; color: #fff; background: #E24B4A; padding: 3px 10px; border-radius: var(--border-radius-md); white-space: nowrap; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--color-text-secondary); margin-bottom: 10px; }
+.legend span { display: flex; align-items: center; gap: 5px; }
+.leg-sq { width: 10px; height: 10px; border-radius: 2px; }
+.tooltip-box { position: absolute; background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 8px 12px; font-size: 12px; color: var(--color-text-primary); pointer-events: none; z-index: 99; min-width: 160px; display: none; box-shadow: none; }
+.model-toggle { display: flex; gap: 6px; }
+.model-btn { font-size: 12px; padding: 4px 12px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-secondary); cursor: pointer; transition: all .15s; }
+.model-btn.active { background: var(--color-background-info); color: var(--color-text-info); border-color: var(--color-border-info); }
+</style>
+
+<div class="dash">
+  <div class="header-bar">
+    <div>
+      <div class="header-title">Production queuing constraint dashboard</div>
+      <div style="font-size:12px;color:var(--color-text-secondary);margin-top:3px;">M/M/1 &amp; M/M/2 utilization analysis — queuing study 240</div>
+    </div>
+    <div class="bottleneck-badge">Primary bottleneck: Folding area (Pre-Fold/Inspection)</div>
+  </div>
+
+  <div class="controls">
+    <label>Model: 
+      <div class="model-toggle">
+        <button class="model-btn active" id="btn-mm1" onclick="setModel('mm1')">M/M/1</button>
+        <button class="model-btn" id="btn-mm2" onclick="setModel('mm2')">M/M/2</button>
+      </div>
+    </label>
+    <label style="margin-left:8px;">
+      <input type="checkbox" id="filter-unstable" onchange="applyFilter()"> Show only unstable stages
+    </label>
+    <label style="margin-left:8px;">Time window:
+      <select id="time-window" onchange="redrawSparklines()">
+        <option value="12">Last 12 h</option>
+        <option value="6">Last 6 h</option>
+        <option value="3">Last 3 h</option>
+        <option value="1">Last 1 h</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="table-wrap">
+    <table id="main-table">
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th>λ (jobs/min)</th>
+          <th>μ (jobs/min)</th>
+          <th>ρ = λ/μ</th>
+          <th>Color</th>
+          <th>Stability (ρ &lt; 1?)</th>
+          <th>Sparkline (12 h)</th>
+          <th>Recommended action</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+  <div class="chart-area">
+    <div class="section-label">Utilization by stage — M/M/1 vs M/M/2</div>
+    <div class="legend">
+      <span><span class="leg-sq" style="background:#185FA5"></span>M/M/1 utilization</span>
+      <span><span class="leg-sq" style="background:#1D9E75"></span>M/M/2 utilization</span>
+      <span><span class="leg-sq" style="background:#E24B4A"></span>Stability threshold ρ = 0.63</span>
+    </div>
+    <div style="position:relative;width:100%;height:260px;">
+      <canvas id="bar-chart"></canvas>
+    </div>
+    <div id="tooltip-box" class="tooltip-box"></div>
+  </div>
+
+  <div id="alert-panel" class="alert-panel"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const stages = [
+  { name: "Cutting",           lambda: 1.0,  mu_mm1: 1.0,  rho_mm1: 1.00, rho_mm2: 0.50, action_mm1: "Add parallel server (M/M/2 upgrade)", action_mm2: "Reallocate staff to higher-load stages" },
+  { name: "Printing",          lambda: 1.67, mu_mm1: 1.0,  rho_mm1: 1.67, rho_mm2: 0.50, action_mm1: "Add parallel server — critical bottleneck",  action_mm2: "Reallocate staff to higher-load stages" },
+  { name: "Pre-Fold/Inspection", lambda: 1.0, mu_mm1: 1.0, rho_mm1: 1.00, rho_mm2: 0.50, action_mm1: "Add parallel server — primary bottleneck", action_mm2: "Reallocate staff to higher-load stages" },
+  { name: "Trimming",          lambda: 1.24, mu_mm1: 1.0,  rho_mm1: 1.24, rho_mm2: 0.63, action_mm1: "Add parallel server",                         action_mm2: "Monitor closely — at stability boundary" },
+  { name: "Inspection",        lambda: 1.0,  mu_mm1: 1.0,  rho_mm1: 1.00, rho_mm2: 0.50, action_mm1: "Add parallel server",                         action_mm2: "Reallocate staff to higher-load stages" },
+];
+
+let currentModel = 'mm1';
+let barChart = null;
+
+function rhoClass(rho) {
+  if (rho < 0.5) return 'green';
+  if (rho <= 0.63) return 'yellow';
+  return 'red';
+}
+
+function rhoLabel(rho) {
+  return rho.toFixed(2);
+}
+
+function getMu(s, model) {
+  if (model === 'mm1') return s.mu_mm1.toFixed(2);
+  return (s.lambda / s.rho_mm2).toFixed(2);
+}
+
+function getRho(s, model) {
+  return model === 'mm1' ? s.rho_mm1 : s.rho_mm2;
+}
+
+function buildSparkData(stage, model, hours) {
+  const seed = stage.name.length + (model === 'mm2' ? 5 : 0);
+  const base = getRho(stage, model);
+  const pts = [];
+  for (let i = 0; i < hours; i++) {
+    const noise = ((Math.sin(i * seed * 0.7 + seed) + Math.cos(i * 0.4 + seed * 2)) * 0.06);
+    pts.push(Math.max(0.1, Math.min(2.0, parseFloat((base + noise).toFixed(2)))));
+  }
+  return pts;
+}
+
+function drawSparkline(canvas, data, rhoColor) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  const min = Math.min(...data) - 0.05, max = Math.max(...data) + 0.05;
+  const colors = { green: '#639922', yellow: '#BA7517', red: '#E24B4A' };
+  const col = colors[rhoColor] || '#888';
+  const toX = i => (i / (data.length - 1)) * (w - 4) + 2;
+  const toY = v => h - 4 - ((v - min) / (max - min)) * (h - 8);
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(data[0]));
+  for (let i = 1; i < data.length; i++) ctx.lineTo(toX(i), toY(data[i]));
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(toX(data.length - 1), toY(data[data.length - 1]), 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = col;
+  ctx.fill();
+}
+
+function buildTable() {
+  const tbody = document.getElementById('table-body');
+  const onlyUnstable = document.getElementById('filter-unstable').checked;
+  const hours = parseInt(document.getElementById('time-window').value);
+  tbody.innerHTML = '';
+  stages.forEach((s, idx) => {
+    const rho = getRho(s, currentModel);
+    const cls = rhoClass(rho);
+    const stable = rho < 1;
+    const action = currentModel === 'mm1' ? s.action_mm1 : s.action_mm2;
+    const unstable = cls === 'red';
+    const tr = document.createElement('tr');
+    if (onlyUnstable && !unstable) { tr.classList.add('hidden'); }
+    const muVal = getMu(s, currentModel);
+    tr.innerHTML = `
+      <td style="font-weight:500">${s.name}</td>
+      <td>${s.lambda.toFixed(2)}</td>
+      <td>${muVal}</td>
+      <td>${rhoLabel(rho)}</td>
+      <td><span class="rho-pill rho-${cls}"><span class="dot dot-${cls}"></span>${cls === 'green' ? 'Under-utilized' : cls === 'yellow' ? 'Stable' : 'Unstable'}</span></td>
+      <td><span class="${stable ? 'stability-ok' : 'stability-bad'}" title="${stable ? 'Stable' : 'Unstable'}">${stable ? '✔' : '✖'}</span></td>
+      <td class="sparkline-cell"><canvas class="spark" id="spark-${idx}" width="80" height="28"></canvas></td>
+      <td class="action">${action}</td>
+    `;
+    tbody.appendChild(tr);
+    requestAnimationFrame(() => {
+      const c = document.getElementById('spark-' + idx);
+      if (c) drawSparkline(c, buildSparkData(s, currentModel, hours), cls);
+    });
+  });
+}
+
+function buildAlerts() {
+  const panel = document.getElementById('alert-panel');
+  const unstable = stages.filter(s => rhoClass(getRho(s, currentModel)) === 'red');
+  if (unstable.length === 0) {
+    panel.innerHTML = `<div style="font-size:13px;color:var(--color-text-secondary);padding:8px 0;"><span style="color:#27500A;margin-right:6px;">✔</span>All stages within stable range. No immediate action required.</div>`;
+    panel.style.background = '#EAF3DE';
+    panel.style.borderColor = '#C0DD97';
+    return;
+  }
+  panel.style.background = '#FCEBEB';
+  panel.style.borderColor = '#F7C1C1';
+  let html = `<div class="alert-title"><span class="alert-dot"></span>Alert — ${unstable.length} stage${unstable.length > 1 ? 's' : ''} require immediate attention</div>`;
+  unstable.forEach(s => {
+    const rho = getRho(s, currentModel);
+    const action = currentModel === 'mm1' ? s.action_mm1 : s.action_mm2;
+    const shortAction = action.split('—')[0].trim().replace('Add parallel server', 'Add parallel server').replace(' (M/M/2 upgrade)', '');
+    html += `<div class="alert-row">
+      <div>
+        <div class="alert-stage">${s.name}</div>
+        <div class="alert-detail">ρ = ${rho.toFixed(2)} — exceeds stability threshold (0.63)</div>
+      </div>
+      <div class="alert-action">${shortAction}</div>
+    </div>`;
+  });
+  panel.innerHTML = html;
+}
+
+function buildBarChart() {
+  const ctx = document.getElementById('bar-chart').getContext('2d');
+  if (barChart) barChart.destroy();
+  const labels = stages.map(s => s.name);
+  const mm1Data = stages.map(s => s.rho_mm1);
+  const mm2Data = stages.map(s => s.rho_mm2);
+  const tooltip = document.getElementById('tooltip-box');
+
+  barChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'M/M/1', data: mm1Data, backgroundColor: '#378ADD', borderRadius: 4, borderSkipped: false, barPercentage: 0.4 },
+        { label: 'M/M/2', data: mm2Data, backgroundColor: '#1D9E75', borderRadius: 4, borderSkipped: false, barPercentage: 0.4 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false },
+        annotation: {}
+      },
+      scales: {
+        y: { min: 0, max: 2.0, grid: { color: 'rgba(128,128,128,0.12)' }, ticks: { color: '#888', font: { size: 11 }, callback: v => v.toFixed(1) } },
+        x: { grid: { display: false }, ticks: { color: '#888', font: { size: 11 } } }
+      },
+      onHover: (evt, els) => {
+        if (els.length) {
+          const el = els[0];
+          const si = el.index;
+          const di = el.datasetIndex;
+          const s = stages[si];
+          const isM1 = di === 0;
+          const rho = isM1 ? s.rho_mm1 : s.rho_mm2;
+          const action = isM1 ? s.action_mm1 : s.action_mm2;
+          tooltip.style.display = 'block';
+          tooltip.style.left = (evt.x + 12) + 'px';
+          tooltip.style.top = (evt.y - 20) + 'px';
+          tooltip.innerHTML = `<b>${s.name}</b> (${isM1 ? 'M/M/1' : 'M/M/2'})<br>λ = ${s.lambda.toFixed(2)} · μ = ${getMu(s, isM1 ? 'mm1' : 'mm2')} · ρ = ${rho.toFixed(2)}<br><span style="color:#A32D2D;font-size:11px;">${action}</span>`;
+        } else {
+          tooltip.style.display = 'none';
+        }
+      }
+    }
+  });
+
+  const refPlugin = {
+    id: 'refLine',
+    afterDraw(chart) {
+      const { ctx, scales: { y, x } } = chart;
+      const yPos = y.getPixelForValue(0.63);
+      ctx.save();
+      ctx.beginPath();
+      ctx.setLineDash([5, 4]);
+      ctx.moveTo(x.left, yPos);
+      ctx.lineTo(x.right, yPos);
+      ctx.strokeStyle = '#E24B4A';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#E24B4A';
+      ctx.font = '11px sans-serif';
+      ctx.fillText('ρ = 0.63 stability threshold', x.right - 172, yPos - 5);
+      ctx.restore();
+    }
+  };
+  Chart.register(refPlugin);
+  barChart.update();
+}
+
+function setModel(m) {
+  currentModel = m;
+  document.getElementById('btn-mm1').classList.toggle('active', m === 'mm1');
+  document.getElementById('btn-mm2').classList.toggle('active', m === 'mm2');
+  buildTable();
+  buildAlerts();
+}
+
+function applyFilter() {
+  buildTable();
+}
+
+function redrawSparklines() {
+  buildTable();
+}
+
+buildTable();
+buildAlerts();
+buildBarChart();
+
+setInterval(() => {
+  const hours = parseInt(document.getElementById('time-window').value);
+  stages.forEach((s, idx) => {
+    const rho = getRho(s, currentModel);
+    const cls = rhoClass(rho);
+    const c = document.getElementById('spark-' + idx);
+    if (c) drawSparkline(c, buildSparkData(s, currentModel, hours), cls);
+  });
+}, 2000);
+</script>

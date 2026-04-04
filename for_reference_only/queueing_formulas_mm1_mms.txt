@@ -1,0 +1,141 @@
+Queueing Theory Formulas: M/M/1 and M/M/s
+==========================================
+Compiled formulas for arrival rate, service rate, server utilization,
+and average waiting time in queue.
+
+IMPORTANT NOTE:
+  Use the same time unit for lambda and mu, such as jobs per 30 minutes,
+  jobs per hour, or jobs per shift.
+
+============================================================
+WHERE:
+  lambda  = arrival rate
+  mu      = service rate
+  rho     = server utilization
+  Wq      = average waiting time in queue
+  Lq      = average number of jobs in queue
+  A       = total arrivals
+  C       = total jobs completed
+  T       = time period observed
+  s       = number of parallel servers
+
+============================================================
+M/M/1 FORMULA SET
+Use this model when there is ONE server handling the jobs.
+
+  Arrival rate:
+    lambda = A / T
+
+  Service rate:
+    mu = C / T
+
+  Server utilization:
+    rho = lambda / mu
+
+  Average number in queue:
+    Lq = lambda^2 / [ mu * (mu - lambda) ]
+
+  Average waiting time in queue:
+    Wq = Lq / lambda
+
+  Equivalent form of Wq:
+    Wq = lambda / [ mu * (mu - lambda) ]
+
+  Stability condition:
+    lambda < mu
+
+============================================================
+M/M/s FORMULA SET
+Use this model when there are MULTIPLE PARALLEL SERVERS handling the jobs.
+
+  Arrival rate:
+    lambda = A / T
+
+  Service rate of each server:
+    mu = C / T   (per server)
+
+  Server utilization:
+    rho = lambda / (s * mu)
+
+  Let:
+    a = lambda / mu
+
+  Probability of zero jobs in the system:
+    P0 = [ SUM(n=0 to s-1) { a^n / n! }  +  a^s / ( s! * (1 - rho) ) ]^(-1)
+
+  Average number in queue:
+    Lq = [ P0 * a^s * rho ] / [ s! * (1 - rho)^2 ]
+
+  Average waiting time in queue:
+    Wq = Lq / lambda
+
+  Stability condition:
+    rho < 1
+
+============================================================
+LaTeX FORMULAS
+------------------------------------------------------------
+
+M/M/1 Formulas
+--------------
+
+Arrival rate:
+  \lambda = \frac{A}{T}
+
+Service rate:
+  \mu = \frac{C}{T}
+
+Server utilization:
+  \rho = \frac{\lambda}{\mu}
+
+Average number in queue:
+  L_q = \frac{\lambda^2}{\mu(\mu - \lambda)}
+
+Average waiting time in queue:
+  W_q = \frac{L_q}{\lambda}
+
+Equivalent form of Wq:
+  W_q = \frac{\lambda}{\mu(\mu - \lambda)}
+
+Stability condition:
+  \lambda < \mu
+
+------------------------------------------------------------
+
+M/M/s Formulas
+--------------
+
+Arrival rate:
+  \lambda = \frac{A}{T}
+
+Service rate (per server):
+  \mu = \frac{C}{T}
+
+Server utilization:
+  \rho = \frac{\lambda}{s\mu}
+
+Let:
+  a = \frac{\lambda}{\mu}
+
+Probability of zero jobs in the system:
+  P_0 = \left[ \sum_{n=0}^{s-1} \frac{a^n}{n!} + \frac{a^s}{s!(1-\rho)} \right]^{-1}
+
+Average number in queue:
+  L_q = \frac{P_0 \, a^s \, \rho}{s!(1-\rho)^2}
+
+Average waiting time in queue:
+  W_q = \frac{L_q}{\lambda}
+
+Stability condition:
+  \rho < 1
+
+============================================================
+QUICK REFERENCE TABLE
+
+  Model   | Arrival Rate | Service Rate | Waiting Time in Queue
+  --------|--------------|--------------|------------------------------------------
+  M/M/1   | lambda = A/T | mu = C/T     | Wq = lambda / [ mu * (mu - lambda) ]
+  M/M/s   | lambda = A/T | mu = C/T     | Wq = Lq / lambda
+
+TIP: If your study uses 30-minute intervals or 12-hour shifts, the formulas
+stay the same. Only the time unit used for A/T and C/T must be consistent.
