@@ -84,7 +84,6 @@ async function main() {
         departmentId: machine.departmentId,
       },
       create: {
-        id: machine.id,
         ...machine,
       },
     });
