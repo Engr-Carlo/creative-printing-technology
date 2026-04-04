@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { Cpu } from "lucide-react";
 import { getMachinesData } from "@/app/actions/machines";
 import { MachinesClient } from "@/components/MachinesClient";
-import prisma from "@/lib/prisma";
 
 export default async function MachinesPage() {
   const session = await auth();
@@ -12,10 +11,7 @@ export default async function MachinesPage() {
   const role = (session.user as any).role;
   if (role === "ENCODER") redirect("/dashboard/encoder");
 
-  const [machines, departments] = await Promise.all([
-    getMachinesData(),
-    prisma.department.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-  ]);
+  const machines = await getMachinesData();
 
   return (
     <div className="space-y-4">
@@ -30,7 +26,6 @@ export default async function MachinesPage() {
       </div>
       <MachinesClient
         machines={machines}
-        departments={departments}
         isAdmin={role === "ADMIN"}
       />
     </div>

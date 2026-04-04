@@ -690,10 +690,7 @@ function MachineCard({
           )}
         </div>
 
-        <div className="px-3 py-2 border-t border-white/5 flex items-center justify-between">
-          <span className="text-[9px] text-slate-600 font-medium truncate pr-2">
-            {machine.department.name}
-          </span>
+        <div className="px-3 py-2 border-t border-white/5 flex items-center justify-end">
           {isAdmin && (
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
@@ -723,21 +720,20 @@ function MachineCard({
 }
 
 // ── Machine Form Dialog ───────────────────────────────────────────────────────
+const MANUAL_DEPT_ID = "dept-manual";
+
 function MachineFormDialog({
   open,
   onClose,
   machine,
-  departments,
 }: {
   open: boolean;
   onClose: () => void;
   machine: MachineWithStatus | null;
-  departments: { id: string; name: string }[];
 }) {
   const isEdit = !!machine;
   const [name, setName] = useState(machine?.name ?? "");
   const [type, setType] = useState(machine?.type ?? MACHINE_TYPES[0]);
-  const [departmentId, setDepartmentId] = useState(machine?.department.id ?? departments[0]?.id ?? "");
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -746,10 +742,9 @@ function MachineFormDialog({
     if (open) {
       setName(machine?.name ?? "");
       setType(machine?.type ?? MACHINE_TYPES[0]);
-      setDepartmentId(machine?.department.id ?? departments[0]?.id ?? "");
       setError("");
     }
-  }, [open, machine, departments]);
+  }, [open, machine]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -757,8 +752,8 @@ function MachineFormDialog({
     setError("");
     startTransition(async () => {
       const result = isEdit
-        ? await updateMachine(machine!.id, { name, type, departmentId })
-        : await createMachine({ name, type, departmentId });
+        ? await updateMachine(machine!.id, { name, type, departmentId: MANUAL_DEPT_ID })
+        : await createMachine({ name, type, departmentId: MANUAL_DEPT_ID });
       if (result.error) { setError(result.error); return; }
       onClose();
     });
@@ -799,20 +794,6 @@ function MachineFormDialog({
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Department <span className="text-red-500">*</span>
-            </label>
-            <select
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              value={departmentId}
-              onChange={(e) => setDepartmentId(e.target.value)}
-            >
-              {departments.map((d) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
-          </div>
           {error && (
             <p className="text-xs text-red-600 flex items-center gap-1">
               <X className="w-3 h-3" /> {error}
@@ -843,11 +824,9 @@ function MachineFormDialog({
 // ── Main Client ───────────────────────────────────────────────────────────────
 export function MachinesClient({
   machines: initialMachines,
-  departments,
   isAdmin,
 }: {
   machines: MachineWithStatus[];
-  departments: { id: string; name: string }[];
   isAdmin: boolean;
 }) {
   const [machines, setMachines] = useState(initialMachines);
@@ -989,7 +968,6 @@ export function MachinesClient({
         open={dialogOpen}
         onClose={() => { setDialogOpen(false); setEditTarget(null); }}
         machine={editTarget}
-        departments={departments}
       />
     </div>
   );
