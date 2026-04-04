@@ -203,3 +203,31 @@
 .dt-gear           { animation: dt-gear           3s linear infinite; transform-box: fill-box; transform-origin: center; }
 .dt-machine-stage  { transform-style: preserve-3d; animation: dt-float 3.6s ease-in-out infinite; }
 .dt-panel-scan     { animation: dt-panel-scan 3.2s linear infinite; }
+
+/* ── SJF Computation Overlay — sci-fi scan line ──────────────────────────── */
+
+@keyframes sjf-scan {
+  0%   { left: -3%;  opacity: 0; }
+  6%   { opacity: 1; }
+  90%  { opacity: 0.7; }
+  100% { left: 103%; opacity: 0; }
+}
+
+.animate-sjf-scan {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, transparent 0%, rgba(74,222,128,0.7) 40%, rgba(74,222,128,1) 50%, rgba(74,222,128,0.7) 60%, transparent 100%);
+  animation: sjf-scan 2.4s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes sjf-flicker {
+  0%, 94%, 96%, 100% { opacity: 1; }
+  95%                 { opacity: 0.4; }
+}
+
+.animate-sjf-flicker {
+  animation: sjf-flicker 4s ease-in-out infinite;
+}

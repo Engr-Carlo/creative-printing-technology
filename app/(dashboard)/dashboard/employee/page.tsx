@@ -95,7 +95,7 @@ export default async function EmployeeDashboardPage(props: {
   const completedProc = allProc.filter((p: { status: string }) => p.status === "COMPLETED").length;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-[calc(100%+2rem)] -mt-4 -mx-4">
       {/* Orange Header Bar */}
       <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 flex items-center justify-between">
         <div>

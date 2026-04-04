@@ -19,7 +19,7 @@ interface ProcessStatusButtonProps {
 }
 
 // ── Progress bar that animates from 0 → ~85% while waiting, then 100% on done ──
-function ProgressBar({ active, done }: { active: boolean; done: boolean }) {
+function ProgressBar({ active, done, barColor = "bg-white/75" }: { active: boolean; done: boolean; barColor?: string }) {
   const [width, setWidth] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -50,7 +50,7 @@ function ProgressBar({ active, done }: { active: boolean; done: boolean }) {
   return (
     <div className="absolute inset-x-0 bottom-0 h-[3px] rounded-b-md overflow-hidden bg-black/20">
       <div
-        className="h-full bg-white/80 transition-all"
+        className={`h-full ${barColor} transition-all`}
         style={{
           width: `${width}%`,
           transitionDuration: done ? "200ms" : "80ms",
@@ -184,7 +184,7 @@ export function ProcessStatusButton({ processId, currentStatus, processName, pro
           >
             <CheckCircle2 className="w-3 h-3 mr-1" />
             Complete
-            <ProgressBar active={pendingTo === "COMPLETED"} done={progressDone && pendingTo === "COMPLETED"} />
+            <ProgressBar active={pendingTo === "COMPLETED"} done={progressDone && pendingTo === "COMPLETED"} barColor="bg-green-500" />
           </Button>
           <Button
             size="sm"
@@ -195,7 +195,7 @@ export function ProcessStatusButton({ processId, currentStatus, processName, pro
           >
             <Clock className="w-3 h-3 mr-1" />
             Delay
-            <ProgressBar active={pendingTo === "DELAYED"} done={progressDone && pendingTo === "DELAYED"} />
+            <ProgressBar active={pendingTo === "DELAYED"} done={progressDone && pendingTo === "DELAYED"} barColor="bg-orange-400" />
           </Button>
           <Button
             size="sm"
@@ -206,7 +206,7 @@ export function ProcessStatusButton({ processId, currentStatus, processName, pro
           >
             <XCircle className="w-3 h-3 mr-1" />
             Reject
-            <ProgressBar active={pendingTo === "REJECTED"} done={progressDone && pendingTo === "REJECTED"} />
+            <ProgressBar active={pendingTo === "REJECTED"} done={progressDone && pendingTo === "REJECTED"} barColor="bg-red-500" />
           </Button>
         </div>
       );
@@ -223,7 +223,7 @@ export function ProcessStatusButton({ processId, currentStatus, processName, pro
         >
           <PlayCircle className={prominent ? "w-4 h-4" : "w-3 h-3 mr-1"} />
           Resume
-          <ProgressBar active={pendingTo === "IN_PROGRESS"} done={progressDone && pendingTo === "IN_PROGRESS"} />
+          <ProgressBar active={pendingTo === "IN_PROGRESS"} done={progressDone && pendingTo === "IN_PROGRESS"} barColor="bg-orange-400" />
         </Button>
       );
     }
