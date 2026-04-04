@@ -74,272 +74,434 @@ function ElapsedTime({ startedAt }: { startedAt: string }) {
   );
 }
 
-// ── 3D Isometric Machine Illustrations ───────────────────────────────────────
-// Each machine uses an isometric projection:
-//   - ISO top face:  skewX(-30) scaleY(0.866)
-//   - ISO left face: skewY(30) scaleX(0.866)  + dark fill
-//   - ISO right face:skewY(-30) scaleX(0.866) + darkest fill
-// Animated with CSS keyframes in globals.css
+// ── Realistic Side-Profile Machine Illustrations ────────────────────────────
+// Each machine is a recognisable 2D side-view silhouette with working-state
+// animations driven by the CSS keyframes already defined in globals.css.
 
 function MachineSVG({ type, status }: { type: string; status: MachineStatus }) {
   const busy     = status === "BUSY";
   const inactive = status === "INACTIVE";
-  const base     = busy ? "#f97316" : inactive ? "#374151" : getAccent(type);
-  const op       = inactive ? 0.25 : 1;
-
-  // Derived shades from base colour for isometric faces
-  const face    = base;          // top face  – brightest
-  const dark    = base + "99";   // left face – mid
-  const darker  = base + "55";   // right face – darkest
+  const c        = busy ? "#f97316" : inactive ? "#4b5563" : getAccent(type);
+  const op       = inactive ? 0.30 : 1;
+  const dim      = c + "66";   // 40 % opacity variant for recessed areas
+  const mid      = c + "99";   // 60 % opacity variant for mid-tones
+  const bg       = "#0f172a";  // card dark background
 
   if (type === "Printing Press") {
-    // Isometric printing press with two rollers and a paper path
+    // Heidelberg-style offset litho press — side view
+    // Layout: paper-roll stand | large press housing | delivery section
     return (
-      <svg viewBox="0 0 160 110" className="w-full h-full" style={{ opacity: op }} overflow="visible">
-        {/* Floor shadow */}
-        <ellipse cx="80" cy="98" rx="54" ry="10" fill={face} className={busy ? "dt-glow-pulse" : ""} opacity="0.12"/>
+      <svg viewBox="0 0 160 100" className="w-full h-full" style={{ opacity: op }}>
+        {/* ── Floor line ── */}
+        <line x1="8" y1="90" x2="152" y2="90" stroke={c} strokeWidth="0.8" opacity="0.25"/>
 
-        {/* ── Machine body (isometric box) ── */}
-        {/* Right face */}
-        <polygon points="120,30 136,40 136,78 120,68" fill={darker} stroke={face} strokeWidth="0.6"/>
-        {/* Left face */}
-        <polygon points="24,40 40,30 120,30 104,40" fill={dark}   stroke={face} strokeWidth="0.6"/>
-        {/* Top face */}
-        <polygon points="24,40 104,40 120,30 40,30" fill={face}   stroke={face} strokeWidth="0.6" opacity="0.18"/>
-        {/* Front face (main) */}
-        <polygon points="24,40 24,78 104,78 104,40" fill="#0f172a" stroke={face} strokeWidth="1"/>
-
-        {/* ── Top roller (isometric cylinder) ── */}
-        <g className={busy ? "dt-roller-spin" : ""} style={{ transformOrigin: "64px 39px" }}>
-          <ellipse cx="64" cy="33" rx="42" ry="10" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
-          <ellipse cx="64" cy="31" rx="42" ry="5"  fill="none"    stroke={face} strokeWidth="0.6" opacity="0.5"/>
-          <rect x="22" y="33" width="84" height="12" fill="#0f172a" stroke={face} strokeWidth="1"/>
-          <ellipse cx="64" cy="45" rx="42" ry="10" fill="#1e293b" stroke={face} strokeWidth="1.2"/>
-          <ellipse cx="22" cy="39" rx="4"  ry="10" fill="#1a2744" stroke={face} strokeWidth="0.8"/>
-          <ellipse cx="106" cy="39" rx="4" ry="10" fill="#1a2744" stroke={face} strokeWidth="0.8"/>
-        </g>
-
-        {/* ── Paper / substrate between rollers ── */}
-        <rect x="22" y="47" width="84" height="4" rx="1"
-          fill={busy ? face : "white"} opacity={busy ? 0.85 : 0.15}
-          className={busy ? "dt-feed" : ""} strokeDasharray={busy ? "8 4" : "0"} strokeDashoffset="0"/>
-
-        {/* ── Bottom roller ── */}
-        <g className={busy ? "dt-roller-spin" : ""} style={{ transformOrigin: "64px 62px", animationDirection: "reverse" }}>
-          <ellipse cx="64" cy="57" rx="42" ry="10" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
-          <ellipse cx="64" cy="55" rx="42" ry="5"  fill="none"    stroke={face} strokeWidth="0.6" opacity="0.5"/>
-          <rect x="22" y="57" width="84" height="10" fill="#0f172a" stroke={face} strokeWidth="1"/>
-          <ellipse cx="64" cy="67" rx="42" ry="10" fill="#1e293b" stroke={face} strokeWidth="1.2"/>
-          <ellipse cx="22"  cy="62" rx="4" ry="10" fill="#1a2744" stroke={face} strokeWidth="0.8"/>
-          <ellipse cx="106" cy="62" rx="4" ry="10" fill="#1a2744" stroke={face} strokeWidth="0.8"/>
-        </g>
-
-        {/* Ink marks on paper when BUSY */}
+        {/* ── Paper roll stand (left) ── */}
+        {/* Stand legs */}
+        <line x1="14" y1="90" x2="14" y2="68" stroke={c} strokeWidth="2.5" strokeLinecap="round"/>
+        <line x1="26" y1="90" x2="26" y2="68" stroke={c} strokeWidth="2.5" strokeLinecap="round"/>
+        {/* Roll hub bar */}
+        <line x1="12" y1="68" x2="28" y2="68" stroke={c} strokeWidth="2" strokeLinecap="round"/>
+        {/* Paper roll — circle */}
+        <circle cx="20" cy="58" r="12" fill={bg} stroke={c} strokeWidth="1.8"/>
+        <circle cx="20" cy="58" r="7"  fill={dim} stroke={c} strokeWidth="1"/>
+        <circle cx="20" cy="58" r="2.5" fill={c} opacity="0.9"/>
+        {/* Rotation spokes when BUSY */}
         {busy && (
-          <>
-            <rect x="36" y="46" width="10" height="6" rx="1" fill={face} opacity="0.75"/>
-            <rect x="58" y="46" width="10" height="6" rx="1" fill={face} opacity="0.75"/>
-            <rect x="80" y="46" width="10" height="6" rx="1" fill={face} opacity="0.75"/>
-          </>
+          <g className="dt-roller-spin" style={{ transformOrigin: "20px 58px" }}>
+            {[0,60,120,180,240,300].map((deg) => {
+              const rad = (deg * Math.PI) / 180;
+              return <line key={deg}
+                x1={20 + Math.cos(rad)*3} y1={58 + Math.sin(rad)*3}
+                x2={20 + Math.cos(rad)*9} y2={58 + Math.sin(rad)*9}
+                stroke={c} strokeWidth="1.2" strokeLinecap="round" opacity="0.7"
+              />;
+            })}
+          </g>
         )}
+        {/* Paper web strip from roll */}
+        <line x1="32" y1="58" x2="48" y2="58"
+          stroke={busy ? c : "white"} strokeWidth="2.5"
+          opacity={busy ? 0.9 : 0.2}
+          className={busy ? "dt-feed" : ""}
+        />
 
-        {/* Output sheet stack on bed */}
-        <rect x="22" y="75" width="84" height="4" rx="1" fill="white" opacity="0.08"/>
-        <rect x="22" y="80" width="84" height="2" rx="1" fill="white" opacity="0.05"/>
+        {/* ── Main press housing ── */}
+        {/* Body */}
+        <rect x="48" y="22" width="70" height="68" rx="3" fill={bg} stroke={c} strokeWidth="1.6"/>
+        {/* Top hood */}
+        <rect x="52" y="18" width="62" height="10" rx="2" fill={dim} stroke={c} strokeWidth="1"/>
+        {/* Impression cylinder — large circle */}
+        <circle cx="83" cy="55" r="22" fill={bg} stroke={c} strokeWidth="1.5"/>
+        <circle cx="83" cy="55" r="16" fill={dim} stroke={mid} strokeWidth="0.8"/>
+        {/* Cylinder cross hatch detail */}
+        <line x1="67" y1="55" x2="99" y2="55" stroke={c} strokeWidth="0.6" opacity="0.4"/>
+        <line x1="83" y1="39" x2="83" y2="71" stroke={c} strokeWidth="0.6" opacity="0.4"/>
+        {/* Cylinder hub */}
+        <circle cx="83" cy="55" r="5" fill={c} opacity="0.7"/>
+        {/* Cylinder rotation anim */}
+        {busy && (
+          <g className="dt-roller-spin" style={{ transformOrigin: "83px 55px" }}>
+            {[0, 45, 90, 135].map((deg) => {
+              const rad = (deg * Math.PI) / 180;
+              return <line key={deg}
+                x1={83 + Math.cos(rad)*6} y1={55 + Math.sin(rad)*6}
+                x2={83 + Math.cos(rad)*20} y2={55 + Math.sin(rad)*20}
+                stroke={c} strokeWidth="1.8" strokeLinecap="round" opacity="0.5"
+              />;
+            })}
+          </g>
+        )}
+        {/* Ink duct bar at top of housing */}
+        <rect x="56" y="28" width="54" height="6" rx="1" fill={mid} opacity="0.5"/>
+        {/* Ink rollers — row of small circles */}
+        <circle cx="62" cy="31" r="3" fill={bg} stroke={c} strokeWidth="1"/>
+        <circle cx="70" cy="31" r="3" fill={bg} stroke={c} strokeWidth="1"/>
+        <circle cx="78" cy="31" r="3" fill={bg} stroke={c} strokeWidth="1"/>
+        <circle cx="86" cy="31" r="3" fill={bg} stroke={c} strokeWidth="1"/>
+        <circle cx="94" cy="31" r="3" fill={bg} stroke={c} strokeWidth="1"/>
+        {/* Control panel box */}
+        <rect x="100" y="68" width="14" height="18" rx="1" fill={dim}/>
+        <rect x="102" y="70" width="4" height="3" rx="0.5" fill={c} opacity="0.8"/>
+        <rect x="108" y="70" width="4" height="3" rx="0.5" fill={c} opacity="0.5"/>
 
-        {/* Isometric side detail lines */}
-        <line x1="120" y1="30" x2="120" y2="68" stroke={face} strokeWidth="0.5" opacity="0.3"/>
-        <line x1="40"  y1="30" x2="40"  y2="78" stroke={face} strokeWidth="0.5" opacity="0.2"/>
+        {/* ── Delivery section (right) ── */}
+        {/* Delivery housing */}
+        <rect x="118" y="42" width="28" height="48" rx="2" fill={bg} stroke={c} strokeWidth="1.2"/>
+        {/* Output sheet stack */}
+        {[0,2,4,6,8].map((offset) => (
+          <line key={offset} x1="121" y1={78 - offset} x2="143" y2={78 - offset}
+            stroke="white" strokeWidth="1" opacity={0.06 + offset * 0.015}/>
+        ))}
+        {/* Delivery rollers */}
+        <circle cx="129" cy="50" r="5" fill={bg} stroke={c} strokeWidth="1.2"/>
+        <circle cx="129" cy="50" r="2" fill={c} opacity="0.6"/>
+        {/* Sheet gripper bar */}
+        <rect x="120" y="58" width="25" height="3" rx="1" fill={mid} opacity="0.5"/>
+        {/* Paper travel line BUSY */}
+        {busy && (
+          <line x1="118" y1="58" x2="105" y2="58"
+            stroke={c} strokeWidth="2" opacity="0.8"
+            className="dt-feed"
+          />
+        )}
       </svg>
     );
   }
 
   if (type === "Cutting Machine") {
-    // Isometric guillotine cutter — blade animates drop when BUSY
+    // Polar guillotine cutter — side view
+    // Layout: wide table bed | left safety guard | vertical blade column | control panel
     return (
-      <svg viewBox="0 0 160 110" className="w-full h-full" style={{ opacity: op }} overflow="visible">
-        {/* Floor shadow */}
-        <ellipse cx="80" cy="100" rx="50" ry="9" fill={face} className={busy ? "dt-glow-pulse" : ""} opacity="0.12"/>
+      <svg viewBox="0 0 160 100" className="w-full h-full" style={{ opacity: op }}>
+        {/* ── Floor line ── */}
+        <line x1="8" y1="90" x2="152" y2="90" stroke={c} strokeWidth="0.8" opacity="0.25"/>
 
-        {/* ── Cutting bed (isometric box) ── */}
-        <polygon points="24,72 40,62 120,62 104,72" fill={dark}   stroke={face} strokeWidth="0.6"/>
-        <polygon points="120,62 136,72 136,88 120,78" fill={darker} stroke={face} strokeWidth="0.6"/>
-        <rect x="24" y="72" width="96" height="18" fill="#0f172a" stroke={face} strokeWidth="1"/>
+        {/* ── Table base / cabinet ── */}
+        <rect x="12" y="68" width="110" height="22" rx="3" fill={bg} stroke={c} strokeWidth="1.5"/>
+        {/* Cabinet door lines */}
+        <line x1="65" y1="70" x2="65" y2="88" stroke={c} strokeWidth="0.7" opacity="0.3"/>
+        <rect x="16" y="72" width="22" height="14" rx="1" fill={dim}/>
+        <rect x="45" y="72" width="16" height="14" rx="1" fill={dim}/>
+        {/* Feet */}
+        <rect x="14" y="88" width="8" height="4" rx="1" fill={c} opacity="0.5"/>
+        <rect x="110" y="88" width="8" height="4" rx="1" fill={c} opacity="0.5"/>
 
-        {/* Paper stack on bed */}
-        <polygon points="28,70 44,60 116,60 100,70" fill="white" opacity="0.08" stroke={face} strokeWidth="0.4"/>
-        <polygon points="28,67 44,57 116,57 100,67" fill="white" opacity="0.05"/>
-
-        {/* Scale ticks on bed */}
-        {[40,55,70,85,100].map((x) => (
-          <line key={x} x1={x} y1="72" x2={x} y2="76" stroke={face} strokeWidth="0.8" opacity="0.35"/>
+        {/* ── Cutting table top surface ── */}
+        <rect x="12" y="54" width="110" height="14" rx="2" fill={dim} stroke={c} strokeWidth="1.2"/>
+        {/* Scale ruler markings */}
+        {[20,30,40,50,60,70,80,90,100,110].map((x) => (
+          <line key={x} x1={x} y1="54" x2={x} y2={x % 40 === 0 ? 50 : 52}
+            stroke={c} strokeWidth="0.8" opacity="0.5"/>
+        ))}
+        {/* Paper stack on table */}
+        {[0,1.5,3,4.5].map((offset) => (
+          <rect key={offset} x="22" y={47 - offset} width="80" height="6" rx="0.5"
+            fill="white" stroke={c} strokeWidth="0.4"
+            opacity={0.07 - offset * 0.01}/>
         ))}
 
-        {/* ── Left column ── */}
-        <polygon points="22,12 30,8 30,68 22,72" fill={dark} stroke={face} strokeWidth="0.8"/>
-        <rect x="14" y="12" width="16" height="60" fill="#0f172a" stroke={face} strokeWidth="1"/>
+        {/* ── Left portal column ── */}
+        <rect x="10" y="12" width="14" height="56" rx="2" fill={bg} stroke={c} strokeWidth="1.5"/>
+        <rect x="12" y="14" width="10" height="8" rx="1" fill={dim}/>
 
-        {/* ── Right column ── */}
-        <polygon points="114,12 122,8 122,68 114,72" fill={dark} stroke={face} strokeWidth="0.8"/>
-        <rect x="114" y="12" width="16" height="60" fill="#0f172a" stroke={face} strokeWidth="1"/>
+        {/* ── Right portal column ── */}
+        <rect x="110" y="12" width="14" height="56" rx="2" fill={bg} stroke={c} strokeWidth="1.5"/>
+        <rect x="112" y="14" width="10" height="8" rx="1" fill={dim}/>
 
         {/* ── Top crossbar ── */}
-        <polygon points="22,8 30,4 138,4 130,8"     fill={face}   stroke={face} strokeWidth="0.6" opacity="0.4"/>
-        <rect x="14" y="8" width="124" height="10" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
+        <rect x="10" y="8" width="114" height="10" rx="2" fill={bg} stroke={c} strokeWidth="1.5"/>
 
-        {/* ── Animated blade group ── */}
-        <g className={busy ? "dt-blade-drop" : ""}>
-          {/* Beam */}
-          <rect x="22" y="22" width="100" height="9" rx="2" fill="#1e293b" stroke={face} strokeWidth="1.2"/>
-          {/* Blade bevel — isometric wedge */}
-          <polygon points="22,31 122,31 120,42 24,42" fill={face} opacity="0.85"/>
-          <line x1="22" y1="31" x2="122" y2="31" stroke="white" strokeWidth="0.6" opacity="0.4"/>
+        {/* ── Animated blade carriage ── */}
+        <g className={busy ? "dt-blade-drop" : ""} style={{ transformOrigin: "67px 35px" }}>
+          {/* Carriage beam */}
+          <rect x="14" y="22" width="106" height="8" rx="1.5" fill={mid} stroke={c} strokeWidth="1.2"/>
+          {/* Blade edge — triangular bevel */}
+          <polygon points="14,30 120,30 119,40 15,40"
+            fill={c} opacity="0.9" stroke={c} strokeWidth="0.5"/>
+          {/* Blade shine */}
+          <line x1="16" y1="31" x2="118" y2="31" stroke="white" strokeWidth="0.8" opacity="0.35"/>
         </g>
+
+        {/* ── Right control panel tower ── */}
+        <rect x="128" y="22" width="24" height="68" rx="3" fill={bg} stroke={c} strokeWidth="1.5"/>
+        {/* Screen */}
+        <rect x="131" y="26" width="18" height="12" rx="1.5" fill={dim}/>
+        {busy && <rect x="131" y="26" width="18" height="12" rx="1.5" fill={c} opacity="0.3"/>}
+        {/* Buttons */}
+        {[0,1,2].map((i) => (
+          <circle key={i} cx={136 + i * 6} cy="46" r="2.5"
+            fill={i === 0 && busy ? c : dim}
+            stroke={c} strokeWidth="0.8"
+          />
+        ))}
+        {/* Numeric keypad dots */}
+        {[0,1,2,3,4,5].map((i) => (
+          <rect key={i} cx={132 + (i % 3) * 6} cy={54 + Math.floor(i / 3) * 6}
+            x={132 + (i % 3) * 6} y={54 + Math.floor(i / 3) * 6}
+            width="4" height="4" rx="0.5"
+            fill={dim} stroke={c} strokeWidth="0.5"
+          />
+        ))}
       </svg>
     );
   }
 
   if (type === "Folding Machine") {
-    // Isometric folder — zigzag paper path through rollers
+    // MBO buckle folder — side view
+    // Layout: angled feed tray | long horizontal body with fold plates | output delivery
     return (
-      <svg viewBox="0 0 160 110" className="w-full h-full" style={{ opacity: op }} overflow="visible">
-        {/* Floor shadow */}
-        <ellipse cx="80" cy="100" rx="56" ry="9" fill={face} className={busy ? "dt-glow-pulse" : ""} opacity="0.12"/>
+      <svg viewBox="0 0 160 100" className="w-full h-full" style={{ opacity: op }}>
+        {/* ── Floor line ── */}
+        <line x1="8" y1="90" x2="152" y2="90" stroke={c} strokeWidth="0.8" opacity="0.25"/>
 
-        {/* ── Machine body ── */}
-        <polygon points="24,38 40,28 136,28 120,38" fill={face}   stroke={face} strokeWidth="0.6" opacity="0.2"/>
-        <polygon points="120,28 136,38 136,80 120,70" fill={darker} stroke={face} strokeWidth="0.6"/>
-        <polygon points="24,38 40,28 40,70 24,80" fill={dark}   stroke={face} strokeWidth="0.6"/>
-        <rect x="24" y="38" width="96" height="34" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
+        {/* ── Machine body (long horizontal cabinet) ── */}
+        <rect x="30" y="48" width="100" height="32" rx="3" fill={bg} stroke={c} strokeWidth="1.6"/>
+        {/* Cabinet panel divisions */}
+        <line x1="60"  y1="50" x2="60"  y2="78" stroke={c} strokeWidth="0.7" opacity="0.25"/>
+        <line x1="90"  y1="50" x2="90"  y2="78" stroke={c} strokeWidth="0.7" opacity="0.25"/>
+        <line x1="115" y1="50" x2="115" y2="78" stroke={c} strokeWidth="0.7" opacity="0.25"/>
+        {/* Machine feet */}
+        <rect x="35" y="78" width="8" height="12" rx="1" fill={c} opacity="0.4"/>
+        <rect x="60" y="78" width="8" height="12" rx="1" fill={c} opacity="0.4"/>
+        <rect x="90" y="78" width="8" height="12" rx="1" fill={c} opacity="0.4"/>
+        <rect x="118" y="78" width="8" height="12" rx="1" fill={c} opacity="0.4"/>
 
-        {/* ── Left feed roller (isometric cylinder vertical) ── */}
-        <ellipse cx="32" cy="53" rx="6" ry="20" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
-        <ellipse cx="32" cy="51" rx="2.5" ry="8" fill="none"    stroke={face} strokeWidth="0.5" opacity="0.4"/>
+        {/* ── Fold plate pockets (visible top openings) ── */}
+        <rect x="35"  y="46" width="20" height="6" rx="1" fill={bg} stroke={c} strokeWidth="1"/>
+        <rect x="63"  y="46" width="20" height="6" rx="1" fill={bg} stroke={c} strokeWidth="1"/>
+        <rect x="93"  y="46" width="18" height="6" rx="1" fill={bg} stroke={c} strokeWidth="1"/>
+        {/* Roller nip pairs at each pocket */}
+        <circle cx="38" cy="49" r="3.5" fill={dim} stroke={c} strokeWidth="1"/>
+        <circle cx="44" cy="49" r="3.5" fill={dim} stroke={c} strokeWidth="1"/>
+        <circle cx="66" cy="49" r="3.5" fill={dim} stroke={c} strokeWidth="1"/>
+        <circle cx="72" cy="49" r="3.5" fill={dim} stroke={c} strokeWidth="1"/>
+        <circle cx="96" cy="49" r="3.5" fill={dim} stroke={c} strokeWidth="1"/>
+        <circle cx="102" cy="49" r="3.5" fill={dim} stroke={c} strokeWidth="1"/>
 
-        {/* ── Right exit roller ── */}
-        <ellipse cx="128" cy="53" rx="6" ry="20" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
-        <ellipse cx="128" cy="51" rx="2.5" ry="8" fill="none"   stroke={face} strokeWidth="0.5" opacity="0.4"/>
-
-        {/* ── Fold knife separator lines ── */}
-        {[60, 80, 100].map((x) => (
-          <line key={x} x1={x} y1="40" x2={x} y2="70" stroke={face} strokeWidth="0.7" strokeDasharray="3 2" opacity="0.3"/>
+        {/* ── Left paper feed tray (angled) ── */}
+        <line x1="12" y1="30" x2="32" y2="50" stroke={c} strokeWidth="2.5" strokeLinecap="round"/>
+        <line x1="20" y1="28" x2="40" y2="48" stroke={c} strokeWidth="2.5" strokeLinecap="round"/>
+        {/* Tray surface */}
+        <polygon points="12,30 20,28 40,48 32,50" fill={dim} opacity="0.5"/>
+        {/* Paper sheets on feed tray */}
+        {[0,2,4].map((offset) => (
+          <line key={offset}
+            x1={13 + offset * 0.5} y1={30 - offset}
+            x2={33 + offset * 0.5} y2={50 - offset}
+            stroke="white" strokeWidth={2 - offset * 0.3} opacity={0.12 - offset * 0.02}
+          />
         ))}
 
-        {/* ── Paper zigzag path ── */}
-        <polyline
-          points="38,53 54,35 72,71 90,35 108,71 122,53"
-          fill="none"
-          stroke={busy ? face : "white"}
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity={busy ? 1 : 0.25}
-          className={busy ? "dt-fold-travel" : ""}
-          strokeDasharray={busy ? "120 0" : "4 4"}
-        />
-
-        {/* Fold vertex dots when BUSY */}
+        {/* ── Paper path through rollers when BUSY ── */}
         {busy && (
-          <>
-            <circle cx="54"  cy="35" r="4" fill={face} opacity="0.9"/>
-            <circle cx="72"  cy="71" r="4" fill={face} opacity="0.9"/>
-            <circle cx="90"  cy="35" r="4" fill={face} opacity="0.9"/>
-            <circle cx="108" cy="71" r="4" fill={face} opacity="0.9"/>
-          </>
+          <g>
+            <polyline
+              points="30,49 48,49 62,49 68,49 82,49 98,49 112,49 130,49"
+              fill="none"
+              stroke={c}
+              strokeWidth="2"
+              strokeLinecap="round"
+              opacity="0.85"
+              className="dt-fold-travel"
+              strokeDasharray="16 8"
+            />
+            {/* Fold crease marks */}
+            <line x1="48" y1="44" x2="48" y2="54" stroke={c} strokeWidth="1.5" opacity="0.7"/>
+            <line x1="82" y1="44" x2="82" y2="54" stroke={c} strokeWidth="1.5" opacity="0.7"/>
+          </g>
         )}
 
-        {/* ── Output stack on bed ── */}
-        <polygon points="32,78 48,68 128,68 112,78" fill="white" opacity="0.06"/>
-        <polygon points="32,82 48,72 128,72 112,82" fill="white" opacity="0.04"/>
+        {/* ── Right output delivery ── */}
+        {/* Delivery tray */}
+        <rect x="130" y="52" width="22" height="6" rx="1" fill={dim} stroke={c} strokeWidth="1"/>
+        {/* Output sheet stack */}
+        {[0,1.5,3,4.5,6].map((offset) => (
+          <rect key={offset}
+            x={131} y={51 - offset}
+            width={20} height={5.5}
+            rx="0.5" fill="white"
+            stroke={c} strokeWidth="0.4"
+            opacity={0.06 + offset * 0.008}
+          />
+        ))}
+        {/* Delivery roller */}
+        <circle cx="140" cy="46" r="5" fill={bg} stroke={c} strokeWidth="1.2"/>
+        <circle cx="140" cy="46" r="2" fill={c} opacity="0.6"/>
+
+        {/* ── Control display ── */}
+        <rect x="116" y="52" width="12" height="10" rx="1" fill={dim}/>
+        {busy && <rect x="116" y="52" width="12" height="10" rx="1" fill={c} opacity="0.25"/>}
+        <line x1="117" y1="57" x2="127" y2="57" stroke={c} strokeWidth="0.8" opacity="0.5"/>
       </svg>
     );
   }
 
   if (type === "Stitching Machine") {
-    // Isometric saddle-stitcher — book on curved saddle, needles plunge when BUSY
+    // Muller Martini saddle stitcher — side view
+    // Layout: cover feeder | long saddle chain conveyor | stitching heads | trimmer/delivery
     return (
-      <svg viewBox="0 0 160 110" className="w-full h-full" style={{ opacity: op }} overflow="visible">
-        {/* Floor shadow */}
-        <ellipse cx="80" cy="100" rx="52" ry="9" fill={face} className={busy ? "dt-glow-pulse" : ""} opacity="0.12"/>
+      <svg viewBox="0 0 160 100" className="w-full h-full" style={{ opacity: op }}>
+        {/* ── Floor line ── */}
+        <line x1="8" y1="90" x2="152" y2="90" stroke={c} strokeWidth="0.8" opacity="0.25"/>
 
-        {/* ── Machine base (isometric) ── */}
-        <polygon points="24,82 40,72 136,72 120,82" fill={dark}    stroke={face} strokeWidth="0.6"/>
-        <polygon points="120,72 136,82 136,92 120,82" fill={darker} stroke={face} strokeWidth="0.6"/>
-        <rect x="24" y="82" width="96" height="12" fill="#0f172a" stroke={face} strokeWidth="1"/>
+        {/* ── Main frame base ── */}
+        <rect x="10" y="72" width="140" height="10" rx="2" fill={bg} stroke={c} strokeWidth="1.4"/>
+        {/* Frame support legs */}
+        {[18, 50, 82, 110, 138].map((x) => (
+          <rect key={x} x={x - 3} y="80" width="6" height="10" rx="1" fill={c} opacity="0.35"/>
+        ))}
 
-        {/* ── Saddle spine (isometric arc — approximated as polygon) ── */}
-        <path
-          d="M 28 76 Q 80 36 132 76"
-          fill="none"
-          stroke={face}
-          strokeWidth="4"
-          opacity="0.75"
-          strokeLinecap="round"
-        />
-        {/* Book pages on saddle */}
-        <path d="M 28 76 Q 56 48 80 42 Q 104 48 132 76" fill="none" stroke={face} strokeWidth="1.5" opacity="0.35"/>
-        <path d="M 32 76 Q 58 52 80 47 Q 102 52 128 76" fill="none" stroke={face} strokeWidth="1"   opacity="0.2"/>
-        {/* Isometric top pages */}
-        <path d="M 80 36 L 90 32 Q 112 42 132 72 L 120 76 Q 100 48 80 42 Z" fill={face} opacity="0.08"/>
+        {/* ── Saddle chain rail ── */}
+        {/* Rail top bar */}
+        <rect x="16" y="60" width="128" height="4" rx="1" fill={dim} stroke={c} strokeWidth="1"/>
+        {/* Saddle fold triangles riding the rail */}
+        {[24, 46, 68, 90, 112, 130].map((x) => (
+          <polygon key={x}
+            points={`${x},60 ${x + 8},60 ${x + 4},52`}
+            fill={bg}
+            stroke={c}
+            strokeWidth="1.2"
+          />
+        ))}
+        {/* Book spine sitting on first/second saddle when BUSY */}
+        {busy && (
+          <>
+            <polygon points="46,60 54,60 50,50" fill={c} opacity="0.25" stroke={c} strokeWidth="0.8"/>
+            <path d="M 46 60 Q 50 46 54 60" fill={c} opacity="0.15"/>
+          </>
+        )}
 
-        {/* ── Left stitching head ── */}
-        <polygon points="42,10 52,6 52,42 42,46" fill={dark}   stroke={face} strokeWidth="0.7"/>
-        <rect x="36" y="10" width="16" height="36" rx="3" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
-        <circle cx="44" cy="15" r="3.5" fill={face} opacity={busy ? 1 : 0.35}/>
+        {/* ── Cover feeder (left side) ── */}
+        {/* Feeder cabinet */}
+        <rect x="8" y="28" width="28" height="44" rx="2" fill={bg} stroke={c} strokeWidth="1.4"/>
+        {/* Feeder stack of signatures */}
+        {[0,2,4,6].map((offset) => (
+          <rect key={offset}
+            x={11} y={30 + offset}
+            width={22} height={3}
+            rx="0.5" fill="white"
+            stroke={c} strokeWidth="0.3"
+            opacity={0.08 - offset * 0.01}
+          />
+        ))}
+        {/* Suction bar */}
+        <rect x="11" y="46" width="22" height="3" rx="1" fill={mid}/>
+        {/* Opening roller */}
+        <circle cx="17" cy="55" r="5" fill={bg} stroke={c} strokeWidth="1.2"/>
+        <circle cx="17" cy="55" r="2" fill={c} opacity="0.6"/>
+
+        {/* ── Stitching head assembly ── */}
+        {/* Head support bar */}
+        <rect x="56" y="16" width="50" height="6" rx="1" fill={mid} stroke={c} strokeWidth="1"/>
+        {/* Left stitching head */}
+        <rect x="60" y="22" width="16" height="28" rx="2" fill={bg} stroke={c} strokeWidth="1.4"/>
+        <rect x="63" y="24" width="10" height="6" rx="1" fill={dim}/>
+        <circle cx="68" cy="26" r="2.5" fill={c} opacity={busy ? 1 : 0.4}/>
         {/* Left needle */}
-        <g className={busy ? "dt-needle-plunge" : ""}>
-          <line x1="44" y1="46" x2="44" y2="60" stroke={face} strokeWidth="2"/>
-          <polygon points="42,60 44,67 46,60" fill={face} opacity="0.9"/>
+        <g className={busy ? "dt-needle-plunge" : ""} style={{ transformOrigin: "68px 50px" }}>
+          <rect x="67" y="50" width="2.5" height="12" rx="0.5" fill={c} opacity="0.9"/>
+          <polygon points="66,62 68.25,68 70.5,62" fill={c} opacity="0.85"/>
         </g>
-
-        {/* ── Right stitching head ── */}
-        <polygon points="106,10 116,6 116,42 106,46" fill={dark}   stroke={face} strokeWidth="0.7"/>
-        <rect x="104" y="10" width="16" height="36" rx="3" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
-        <circle cx="112" cy="15" r="3.5" fill={face} opacity={busy ? 1 : 0.35}/>
+        {/* Right stitching head */}
+        <rect x="84" y="22" width="16" height="28" rx="2" fill={bg} stroke={c} strokeWidth="1.4"/>
+        <rect x="87" y="24" width="10" height="6" rx="1" fill={dim}/>
+        <circle cx="92" cy="26" r="2.5" fill={c} opacity={busy ? 1 : 0.4}/>
         {/* Right needle */}
-        <g className={busy ? "dt-needle-plunge" : ""} style={{ animationDelay: "0.2s" }}>
-          <line x1="112" y1="46" x2="112" y2="60" stroke={face} strokeWidth="2"/>
-          <polygon points="110,60 112,67 114,60" fill={face} opacity="0.9"/>
+        <g className={busy ? "dt-needle-plunge" : ""} style={{ transformOrigin: "92px 50px", animationDelay: "0.2s" }}>
+          <rect x="91" y="50" width="2.5" height="12" rx="0.5" fill={c} opacity="0.9"/>
+          <polygon points="90,62 92.25,68 94.5,62" fill={c} opacity="0.85"/>
         </g>
 
-        {/* ── Stitch wire dots along spine ── */}
-        {[30, 44, 58, 72, 86, 100, 114, 128].map((xp, i) => {
-          const t  = (xp - 28) / 104;
-          const sy = 76 - 40 * 4 * t * (1 - t);
-          return <circle key={i} cx={xp} cy={sy} r="2.8" fill={face} opacity={busy ? 1 : 0.3}/>;
-        })}
+        {/* ── Trimmer / delivery (right end) ── */}
+        {/* Trimmer housing */}
+        <rect x="122" y="32" width="30" height="40" rx="2" fill={bg} stroke={c} strokeWidth="1.4"/>
+        {/* Trimmer blade */}
+        <rect x="125" y="36" width="24" height="5" rx="1" fill={mid}/>
+        <polygon points="125,41 149,41 148,47 126,47" fill={c} opacity="0.75"/>
+        {/* Output chute */}
+        <rect x="130" y="54" width="18" height="14" rx="1" fill={dim}/>
+        {/* Finished books in chute */}
+        {busy && [0,3,6].map((y) => (
+          <rect key={y} x="132" y={56 + y} width="14" height="2.5" rx="0.5"
+            fill="white" opacity={0.1 - y * 0.02}/>
+        ))}
+        {/* Wire spool on top */}
+        <circle cx="134" cy="32" r="6" fill={bg} stroke={c} strokeWidth="1.2"/>
+        <circle cx="134" cy="32" r="3" fill={dim}/>
+        {busy && (
+          <g className="dt-roller-spin" style={{ transformOrigin: "134px 32px" }}>
+            {[0,120,240].map((deg) => {
+              const rad = (deg * Math.PI) / 180;
+              return <line key={deg}
+                x1={134 + Math.cos(rad)*3.5} y1={32 + Math.sin(rad)*3.5}
+                x2={134 + Math.cos(rad)*5.5} y2={32 + Math.sin(rad)*5.5}
+                stroke={c} strokeWidth="1.2" opacity="0.7"
+              />;
+            })}
+          </g>
+        )}
       </svg>
     );
   }
 
-  // Other / generic isometric box with rotating gear on top
+  // Other / generic machine — side-view cabinet with display and gear
   return (
-    <svg viewBox="0 0 160 110" className="w-full h-full" style={{ opacity: op }} overflow="visible">
-      <ellipse cx="80" cy="98" rx="44" ry="8" fill={face} opacity="0.1"/>
-      {/* Box right */}
-      <polygon points="110,38 126,48 126,80 110,70" fill={darker} stroke={face} strokeWidth="0.6"/>
-      {/* Box left */}
-      <polygon points="34,48 50,38 110,38 94,48" fill={dark}   stroke={face} strokeWidth="0.6"/>
-      {/* Box front */}
-      <rect x="34" y="48" width="76" height="32" fill="#0f172a" stroke={face} strokeWidth="1"/>
-      {/* Box top */}
-      <polygon points="34,48 50,38 110,38 94,48" fill={face} stroke={face} strokeWidth="0.6" opacity="0.15"/>
-
-      {/* Gear on top face */}
-      <g className={busy ? "dt-gear" : ""} style={{ transformOrigin: "80px 43px" }}>
-        <circle cx="80" cy="43" r="14" fill="none" stroke={face} strokeWidth="1.2" opacity="0.6"/>
-        <circle cx="80" cy="43" r="6"  fill="none" stroke={face} strokeWidth="1.2"/>
+    <svg viewBox="0 0 160 100" className="w-full h-full" style={{ opacity: op }}>
+      <line x1="8" y1="90" x2="152" y2="90" stroke={c} strokeWidth="0.8" opacity="0.25"/>
+      {/* Cabinet body */}
+      <rect x="30" y="20" width="100" height="70" rx="4" fill={bg} stroke={c} strokeWidth="1.6"/>
+      {/* Top lid */}
+      <rect x="34" y="16" width="92" height="8" rx="2" fill={dim} stroke={c} strokeWidth="1"/>
+      {/* Display screen */}
+      <rect x="38" y="28" width="50" height="28" rx="2" fill={dim}/>
+      {busy && <rect x="38" y="28" width="50" height="28" rx="2" fill={c} opacity="0.2"/>}
+      <line x1="40" y1="36" x2="86" y2="36" stroke={c} strokeWidth="0.8" opacity="0.4"/>
+      <line x1="40" y1="42" x2="80" y2="42" stroke={c} strokeWidth="0.8" opacity="0.3"/>
+      <line x1="40" y1="48" x2="76" y2="48" stroke={c} strokeWidth="0.8" opacity="0.25"/>
+      {/* Control buttons */}
+      {[0,1,2].map((i) => (
+        <circle key={i} cx={96 + i * 10} cy="35" r="3.5"
+          fill={i === 0 && busy ? c : dim}
+          stroke={c} strokeWidth="0.8"/>
+      ))}
+      {/* Larger gear / rotating element */}
+      <g className={busy ? "dt-gear" : ""} style={{ transformOrigin: "96px 66px" }}>
+        <circle cx="96" cy="66" r="14" fill="none" stroke={c} strokeWidth="1.2" opacity="0.5"/>
+        <circle cx="96" cy="66" r="6" fill={dim} stroke={c} strokeWidth="1"/>
         {Array.from({ length: 8 }).map((_, i) => {
           const a = (i * 45 * Math.PI) / 180;
           return (
             <line key={i}
-              x1={80 + Math.cos(a) * 12} y1={43 + Math.sin(a) * 12}
-              x2={80 + Math.cos(a) * 17} y2={43 + Math.sin(a) * 17}
-              stroke={face} strokeWidth="4" strokeLinecap="round"
+              x1={96 + Math.cos(a)*7} y1={66 + Math.sin(a)*7}
+              x2={96 + Math.cos(a)*13} y2={66 + Math.sin(a)*13}
+              stroke={c} strokeWidth="3.5" strokeLinecap="round"
             />
           );
         })}
       </g>
+      {/* Feet */}
+      <rect x="36" y="88" width="10" height="5" rx="1" fill={c} opacity="0.4"/>
+      <rect x="114" y="88" width="10" height="5" rx="1" fill={c} opacity="0.4"/>
     </svg>
   );
 }

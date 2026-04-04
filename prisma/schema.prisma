@@ -194,6 +194,7 @@ model Machine {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+  @@unique([name, departmentId])
   @@index([departmentId])
   @@index([isActive])
 }
