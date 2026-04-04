@@ -11,10 +11,25 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
   }
 
   try {
-    const process = await prisma.process.findUnique({
-      where: { id: processId },
-      include: { item: true },
-    });
+    // ── Fetch process + previous process in parallel ───────────────────────
+    const [process, previousProcess] = await Promise.all([
+      prisma.process.findUnique({
+        where: { id: processId },
+        include: { item: true },
+      }),
+      // Pre-fetch the previous process (only needed for IN_PROGRESS guard, but
+      // fetching now in parallel costs nothing if not needed)
+      newStatus === "IN_PROGRESS"
+        ? prisma.process.findFirst({
+            where: {
+              // We don't know itemId/order yet — refetch after process loads
+              // So this slot is a no-op placeholder; real fetch happens below
+              id: "__noop__",
+            },
+            select: { status: true, name: true },
+          }).then(() => null).catch(() => null)
+        : Promise.resolve(null),
+    ]);
 
     if (!process) {
       return { error: "Process not found" };
@@ -27,13 +42,13 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
     }
 
     // 2. Sequential enforcement: previous process must be COMPLETED before starting next
-    if (newStatus === "IN_PROGRESS") {
-      const previousProcess = await prisma.process.findFirst({
+    if (newStatus === "IN_PROGRESS" && process.order > 1) {
+      const prev = await prisma.process.findFirst({
         where: { itemId: process.itemId, order: process.order - 1 },
         select: { status: true, name: true },
       });
-      if (previousProcess && previousProcess.status !== "COMPLETED") {
-        return { error: `Cannot start — previous process "${previousProcess.name}" is not yet completed.` };
+      if (prev && prev.status !== "COMPLETED") {
+        return { error: `Cannot start — previous process "${prev.name}" is not yet completed.` };
       }
     }
 
@@ -42,47 +57,51 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
       return { error: "Cannot start process — item has been rejected." };
     }
 
-    // Record the old status for update tracking
     const oldStatus = process.status;
+    const now = new Date();
 
-    // Update the process
-    const updatedProcess = await prisma.process.update({
-      where: { id: processId },
-      data: {
-        status: newStatus as any,
-        startedAt: newStatus === "IN_PROGRESS" && !process.startedAt ? new Date() : process.startedAt,
-        completedAt: (newStatus === "COMPLETED" || newStatus === "REJECTED") ? new Date() : null,
-      },
-    });
-
-    // Create process update record
-    await prisma.processUpdate.create({
-      data: {
-        processId: processId,
-        userId: session.user.id,
-        oldStatus: oldStatus as any,
-        newStatus: newStatus as any,
-      },
-    });
-
-    // Auto-update item status based on process changes
-    if (newStatus === "IN_PROGRESS" && process.item.status === "PENDING") {
-      await prisma.item.update({
-        where: { id: process.itemId },
-        data: { status: "IN_PROGRESS" },
-      });
-    }
+    // ── Core write + audit log in parallel ────────────────────────────────
+    const [updatedProcess] = await Promise.all([
+      prisma.process.update({
+        where: { id: processId },
+        data: {
+          status: newStatus as any,
+          startedAt: newStatus === "IN_PROGRESS" && !process.startedAt ? now : process.startedAt,
+          completedAt: (newStatus === "COMPLETED" || newStatus === "REJECTED") ? now : null,
+        },
+      }),
+      prisma.processUpdate.create({
+        data: {
+          processId,
+          userId: session.user.id,
+          oldStatus: oldStatus as any,
+          newStatus: newStatus as any,
+        },
+      }),
+      // Auto-elevate item from PENDING → IN_PROGRESS in the same parallel batch
+      newStatus === "IN_PROGRESS" && process.item.status === "PENDING"
+        ? prisma.item.update({ where: { id: process.itemId }, data: { status: "IN_PROGRESS" } })
+        : Promise.resolve(null),
+    ]);
 
     let itemCompleted = false;
     let itemRejected = false;
 
     if (newStatus === "COMPLETED") {
-      // ── Deduct materials consumed by this process ──────────────────────
-      const materialUsages = await prisma.processMaterialUsage.findMany({
-        where: { processId },
-        include: { inventoryItem: true },
-      });
+      // ── Fetch materials + siblings in parallel ─────────────────────────
+      const [materialUsages, siblings] = await Promise.all([
+        prisma.processMaterialUsage.findMany({
+          where: { processId },
+          include: { inventoryItem: true },
+        }),
+        prisma.process.findMany({
+          where: { itemId: process.itemId },
+          select: { id: true, status: true },
+        }),
+      ]);
 
+      // Deduct materials (if any) — already includes the updated row via
+      // the process.update above, so treat this process as COMPLETED in check
       if (materialUsages.length > 0) {
         await prisma.$transaction([
           ...materialUsages.map((u) =>
@@ -106,12 +125,11 @@ export async function updateProcessStatus(processId: string, newStatus: string) 
         revalidatePath("/dashboard/inventory");
       }
 
-      // ── Check if all processes done → mark item COMPLETED ──────────────
-      const siblings = await prisma.process.findMany({
-        where: { itemId: process.itemId },
-        select: { status: true },
-      });
-      if (siblings.every((p) => p.status === "COMPLETED")) {
+      // Mark item COMPLETED if all siblings are now done
+      const allDone = siblings.every(
+        (p) => p.id === processId ? true : p.status === "COMPLETED"
+      );
+      if (allDone) {
         await prisma.item.update({
           where: { id: process.itemId },
           data: { status: "COMPLETED" },

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { updateProcessStatus } from "@/app/actions/processes";
 import { useRouter } from "next/navigation";
-import { PlayCircle, CheckCircle2, Clock, XCircle, Loader2 } from "lucide-react";
+import { PlayCircle, CheckCircle2, Clock, XCircle } from "lucide-react";
 
 interface ProcessStatusButtonProps {
   processId: string;
@@ -18,16 +18,58 @@ interface ProcessStatusButtonProps {
   lockReason?: string;
 }
 
+// ── Progress bar that animates from 0 → ~85% while waiting, then 100% on done ──
+function ProgressBar({ active, done }: { active: boolean; done: boolean }) {
+  const [width, setWidth] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (active && !done) {
+      setWidth(0);
+      // Advance quickly to ~85% over ~2.5s, then slow down (waiting for server)
+      let current = 0;
+      timerRef.current = setInterval(() => {
+        current += current < 60 ? 4 : current < 80 ? 1.2 : 0.3;
+        if (current >= 85) current = 85;
+        setWidth(current);
+      }, 80);
+    }
+    if (done) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      setWidth(100);
+    }
+    if (!active && !done) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      setWidth(0);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [active, done]);
+
+  if (!active && !done) return null;
+
+  return (
+    <div className="absolute inset-x-0 bottom-0 h-[3px] rounded-b-md overflow-hidden bg-black/20">
+      <div
+        className="h-full bg-white/80 transition-all"
+        style={{
+          width: `${width}%`,
+          transitionDuration: done ? "200ms" : "80ms",
+          transitionTimingFunction: "linear",
+        }}
+      />
+    </div>
+  );
+}
+
 export function ProcessStatusButton({ processId, currentStatus, processName, prominent = false, locked = false, lockReason }: ProcessStatusButtonProps) {
   const router = useRouter();
-  // localStatus drives the UI immediately; server re-render syncs in the background
   const [localStatus, setLocalStatus] = useState(currentStatus);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSyncing, startSyncTransition] = useTransition();
+  const [pendingTo, setPendingTo] = useState<string | null>(null); // which status we're transitioning TO
+  const [progressDone, setProgressDone] = useState(false);
+  const [, startSyncTransition] = useTransition();
   const [modal, setModal] = useState<"completed" | "rejected" | null>(null);
 
-  // Combined busy state — disable buttons while calling server OR while router refreshes
-  const isBusy = isSubmitting || isSyncing;
+  const isBusy = pendingTo !== null;
 
   function closeModal() {
     setModal(null);
@@ -35,14 +77,17 @@ export function ProcessStatusButton({ processId, currentStatus, processName, pro
   }
 
   async function handleStatusChange(newStatus: string) {
-    setIsSubmitting(true);
+    setPendingTo(newStatus);
+    setProgressDone(false);
     try {
       const result = await updateProcessStatus(processId, newStatus);
       if (result.error) {
         alert(result.error);
         return;
       }
-      // Optimistically update the local UI immediately
+      // Snap bar to 100%, brief pause for the animation, then flip UI
+      setProgressDone(true);
+      await new Promise((res) => setTimeout(res, 200));
       setLocalStatus(newStatus);
 
       if ("itemCompleted" in result && result.itemCompleted) {
@@ -50,13 +95,14 @@ export function ProcessStatusButton({ processId, currentStatus, processName, pro
       } else if ("itemRejected" in result && result.itemRejected) {
         setModal("rejected");
       } else {
-        // Sync server state in the background — isSyncing keeps buttons disabled
+        // Silently sync server state — user never waits for this
         startSyncTransition(() => { router.refresh(); });
       }
     } catch {
       alert("Failed to update status");
     } finally {
-      setIsSubmitting(false);
+      setPendingTo(null);
+      setProgressDone(false);
     }
   }
 
@@ -80,16 +126,13 @@ export function ProcessStatusButton({ processId, currentStatus, processName, pro
       return (
         <Button
           size={prominent ? "default" : "sm"}
-          className={prominent ? "gap-2 bg-blue-600 hover:bg-blue-700 text-white" : "text-xs"}
+          className={`relative overflow-hidden ${prominent ? "gap-2 bg-blue-600 hover:bg-blue-700 text-white" : "text-xs"}`}
           onClick={() => handleStatusChange("IN_PROGRESS")}
           disabled={isBusy}
         >
-          {isBusy ? (
-            <Loader2 className={`animate-spin ${prominent ? "w-4 h-4" : "w-3 h-3 mr-2"}`} />
-          ) : (
-            <PlayCircle className={prominent ? "w-4 h-4" : "w-3 h-3 mr-1"} />
-          )}
+          <PlayCircle className={prominent ? "w-4 h-4" : "w-3 h-3 mr-1"} />
           {prominent ? "Start Evaluation" : "Start Process"}
+          <ProgressBar active={pendingTo === "IN_PROGRESS"} done={progressDone && pendingTo === "IN_PROGRESS"} />
         </Button>
       );
     }
@@ -99,38 +142,33 @@ export function ProcessStatusButton({ processId, currentStatus, processName, pro
         return (
           <div className="flex items-center gap-3">
             <Button
-              className="gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-sm font-bold"
+              className="relative overflow-hidden gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-sm font-bold"
               onClick={() => handleStatusChange("COMPLETED")}
               disabled={isBusy}
             >
-              {isBusy ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <CheckCircle2 className="w-5 h-5" />
-              )}
+              <CheckCircle2 className="w-5 h-5" />
               COMPLETE
+              <ProgressBar active={pendingTo === "COMPLETED"} done={progressDone && pendingTo === "COMPLETED"} />
             </Button>
             <Button
-              className="gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-2 text-sm font-bold"
+              className="relative overflow-hidden gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-2 text-sm font-bold"
               onClick={() => handleStatusChange("REJECTED")}
               disabled={isBusy}
             >
-              {isBusy ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <XCircle className="w-5 h-5" />
-              )}
+              <XCircle className="w-5 h-5" />
               REJECT
+              <ProgressBar active={pendingTo === "REJECTED"} done={progressDone && pendingTo === "REJECTED"} />
             </Button>
             <Button
               size="sm"
               variant="outline"
-              className="text-xs border-orange-300 text-orange-700 hover:bg-orange-50"
+              className="relative overflow-hidden text-xs border-orange-300 text-orange-700 hover:bg-orange-50"
               onClick={() => handleStatusChange("DELAYED")}
               disabled={isBusy}
             >
               <Clock className="w-3 h-3 mr-1" />
               Delay
+              <ProgressBar active={pendingTo === "DELAYED"} done={progressDone && pendingTo === "DELAYED"} />
             </Button>
           </div>
         );
@@ -140,36 +178,35 @@ export function ProcessStatusButton({ processId, currentStatus, processName, pro
           <Button
             size="sm"
             variant="outline"
-            className="text-xs border-green-300 text-green-700 hover:bg-green-50"
+            className="relative overflow-hidden text-xs border-green-300 text-green-700 hover:bg-green-50"
             onClick={() => handleStatusChange("COMPLETED")}
             disabled={isBusy}
           >
-            {isBusy ? (
-              <Loader2 className="w-3 h-3 animate-spin mr-2" />
-            ) : (
-              <CheckCircle2 className="w-3 h-3 mr-1" />
-            )}
+            <CheckCircle2 className="w-3 h-3 mr-1" />
             Complete
+            <ProgressBar active={pendingTo === "COMPLETED"} done={progressDone && pendingTo === "COMPLETED"} />
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="text-xs border-orange-300 text-orange-700 hover:bg-orange-50"
+            className="relative overflow-hidden text-xs border-orange-300 text-orange-700 hover:bg-orange-50"
             onClick={() => handleStatusChange("DELAYED")}
             disabled={isBusy}
           >
             <Clock className="w-3 h-3 mr-1" />
             Delay
+            <ProgressBar active={pendingTo === "DELAYED"} done={progressDone && pendingTo === "DELAYED"} />
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="text-xs border-red-300 text-red-700 hover:bg-red-50"
+            className="relative overflow-hidden text-xs border-red-300 text-red-700 hover:bg-red-50"
             onClick={() => handleStatusChange("REJECTED")}
             disabled={isBusy}
           >
             <XCircle className="w-3 h-3 mr-1" />
             Reject
+            <ProgressBar active={pendingTo === "REJECTED"} done={progressDone && pendingTo === "REJECTED"} />
           </Button>
         </div>
       );
@@ -180,16 +217,13 @@ export function ProcessStatusButton({ processId, currentStatus, processName, pro
         <Button
           size={prominent ? "default" : "sm"}
           variant="outline"
-          className={prominent ? "gap-2 border-orange-400 text-orange-700 hover:bg-orange-50" : "text-xs"}
+          className={`relative overflow-hidden ${prominent ? "gap-2 border-orange-400 text-orange-700 hover:bg-orange-50" : "text-xs"}`}
           onClick={() => handleStatusChange("IN_PROGRESS")}
           disabled={isBusy}
         >
-          {isBusy ? (
-            <Loader2 className={`animate-spin ${prominent ? "w-4 h-4" : "w-3 h-3 mr-2"}`} />
-          ) : (
-            <PlayCircle className={prominent ? "w-4 h-4" : "w-3 h-3 mr-1"} />
-          )}
+          <PlayCircle className={prominent ? "w-4 h-4" : "w-3 h-3 mr-1"} />
           Resume
+          <ProgressBar active={pendingTo === "IN_PROGRESS"} done={progressDone && pendingTo === "IN_PROGRESS"} />
         </Button>
       );
     }
