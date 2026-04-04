@@ -114,3 +114,92 @@
 .animate-slideInRight {
   animation: slideInRight 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* ── Digital Twin 3D Machine Animations ───────────────────────────────────── */
+
+@keyframes dt-float {
+  0%, 100% {
+    transform: rotateX(14deg) rotateY(-18deg) translateY(0px) scale(1);
+  }
+  50% {
+    transform: rotateX(14deg) rotateY(-18deg) translateY(-4px) scale(1.01);
+  }
+}
+
+@keyframes dt-panel-scan {
+  0% {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateX(140%);
+    opacity: 0;
+  }
+}
+
+/* Press rollers spin */
+@keyframes dt-roller-spin {
+  from { transform: rotateX(60deg) rotateZ(0deg); }
+  to   { transform: rotateX(60deg) rotateZ(360deg); }
+}
+
+/* Paper tape feeds left-to-right */
+@keyframes dt-feed {
+  from { stroke-dashoffset: 60; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* Blade drops and rises */
+@keyframes dt-blade-drop {
+  0%,40%  { transform: translateY(0); }
+  50%     { transform: translateY(28px); }
+  65%,100%{ transform: translateY(0); }
+}
+
+/* Fold paper animates */
+@keyframes dt-fold-travel {
+  from { stroke-dashoffset: 120; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* Needles plunge */
+@keyframes dt-needle-plunge {
+  0%,40%  { transform: translateY(0); }
+  55%     { transform: translateY(14px); }
+  70%,100%{ transform: translateY(0); }
+}
+
+/* Isometric shadow pulse for BUSY */
+@keyframes dt-glow-pulse {
+  0%,100% { opacity: 0.25; }
+  50%     { opacity: 0.55; }
+}
+
+/* Conveyor belt dots move */
+@keyframes dt-conveyor {
+  from { transform: translateX(0); }
+  to   { transform: translateX(20px); }
+}
+
+/* Gear rotate for Other type */
+@keyframes dt-gear {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.dt-roller-spin    { animation: dt-roller-spin    1.2s linear infinite; transform-origin: 50% 50%; }
+.dt-feed           { animation: dt-feed           0.6s linear infinite; }
+.dt-blade-drop     { animation: dt-blade-drop     1.8s ease-in-out infinite; }
+.dt-fold-travel    { animation: dt-fold-travel    0.9s linear infinite; }
+.dt-needle-plunge  { animation: dt-needle-plunge  1.4s ease-in-out infinite; }
+.dt-glow-pulse     { animation: dt-glow-pulse     1.5s ease-in-out infinite; }
+.dt-conveyor       { animation: dt-conveyor       0.5s linear infinite; }
+.dt-gear           { animation: dt-gear           3s linear infinite; transform-box: fill-box; transform-origin: center; }
+.dt-machine-stage  { transform-style: preserve-3d; animation: dt-float 3.6s ease-in-out infinite; }
+.dt-panel-scan     { animation: dt-panel-scan 3.2s linear infinite; }

@@ -181,7 +181,7 @@ model Process {
 
 model Machine {
   id   String @id @default(cuid())
-  name String // "M1", "M2", "M3", "TW102", etc.
+  name String // e.g. "HP-01", "PC-01", "MBO-01", "MM-01"
   type String
   
   departmentId String

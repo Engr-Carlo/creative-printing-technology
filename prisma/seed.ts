@@ -61,30 +61,30 @@ async function main() {
   // Create Machines
   console.log('Creating machines...');
   const machines = [
-    // Printing presses (6 machines for all item types)
-    { name: 'R1', type: 'Printing Press', departmentId: manual.id },
-    { name: 'R2', type: 'Printing Press', departmentId: manual.id },
-    { name: 'R3', type: 'Printing Press', departmentId: manual.id },
-    { name: 'R4', type: 'Printing Press', departmentId: manual.id },
-    { name: 'R5', type: 'Printing Press', departmentId: manual.id },
-    { name: 'R6', type: 'Printing Press', departmentId: manual.id },
-    // Trimming
-    { name: 'Polar Cutter', type: 'Cutting Machine', departmentId: manual.id },
-    // Folding machines
-    { name: 'MB01', type: 'Folding Machine', departmentId: manual.id },
-    { name: 'MB02', type: 'Folding Machine', departmentId: manual.id },
-    { name: 'MB03', type: 'Folding Machine', departmentId: manual.id },
-    { name: 'MB04', type: 'Folding Machine', departmentId: manual.id },
-    // Stitching
-    { name: 'Muller Martini', type: 'Stitching Machine', departmentId: manual.id },
+    { id: 'machine-manual-hp-01', name: 'HP-01', type: 'Printing Press', departmentId: manual.id },
+    { id: 'machine-manual-hp-02', name: 'HP-02', type: 'Printing Press', departmentId: manual.id },
+    { id: 'machine-manual-hp-03', name: 'HP-03', type: 'Printing Press', departmentId: manual.id },
+    { id: 'machine-manual-hp-04', name: 'HP-04', type: 'Printing Press', departmentId: manual.id },
+    { id: 'machine-manual-hp-05', name: 'HP-05', type: 'Printing Press', departmentId: manual.id },
+    { id: 'machine-manual-hp-06', name: 'HP-06', type: 'Printing Press', departmentId: manual.id },
+    { id: 'machine-manual-pc-01', name: 'PC-01', type: 'Cutting Machine', departmentId: manual.id },
+    { id: 'machine-manual-mbo-01', name: 'MBO-01', type: 'Folding Machine', departmentId: manual.id },
+    { id: 'machine-manual-mbo-02', name: 'MBO-02', type: 'Folding Machine', departmentId: manual.id },
+    { id: 'machine-manual-mbo-03', name: 'MBO-03', type: 'Folding Machine', departmentId: manual.id },
+    { id: 'machine-manual-mbo-04', name: 'MBO-04', type: 'Folding Machine', departmentId: manual.id },
+    { id: 'machine-manual-mm-01', name: 'MM-01', type: 'Stitching Machine', departmentId: manual.id },
   ];
 
   for (const machine of machines) {
     await prisma.machine.upsert({
-      where: { id: `machine-${machine.departmentId}-${machine.name}` },
-      update: {},
+      where: { id: machine.id },
+      update: {
+        name: machine.name,
+        type: machine.type,
+        departmentId: machine.departmentId,
+      },
       create: {
-        id: `machine-${machine.departmentId}-${machine.name}`,
+        id: machine.id,
         ...machine,
       },
     });
@@ -92,11 +92,15 @@ async function main() {
 
   // Create Users
   console.log('Creating users...');
-  const hashedPassword = await bcrypt.hash('password123', 10);
+  const hashedPassword = await bcrypt.hash('1234', 10);
 
   const admin = await prisma.user.upsert({
     where: { email: 'admin@cpt.com' },
-    update: {},
+    update: {
+      name: 'Admin',
+      password: hashedPassword,
+      role: UserRole.ADMIN,
+    },
     create: {
       email: 'admin@cpt.com',
       name: 'Admin',
@@ -107,7 +111,12 @@ async function main() {
 
   const lineLeader = await prisma.user.upsert({
     where: { email: 'lineleader@cpt.com' },
-    update: {},
+    update: {
+      name: 'Line Leader',
+      password: hashedPassword,
+      role: UserRole.EMPLOYEE,
+      departmentId: manual.id,
+    },
     create: {
       email: 'lineleader@cpt.com',
       name: 'Line Leader',
@@ -119,7 +128,11 @@ async function main() {
 
   const encoder = await prisma.user.upsert({
     where: { email: 'encoder@cpt.com' },
-    update: {},
+    update: {
+      name: 'Encoder',
+      password: hashedPassword,
+      role: UserRole.ENCODER,
+    },
     create: {
       email: 'encoder@cpt.com',
       name: 'Encoder',
@@ -192,25 +205,25 @@ async function main() {
   // Create Processes for Item 1
   console.log('Creating processes...');
   const machineR1 = await prisma.machine.findFirst({
-    where: { departmentId: manual.id, name: 'R1' },
+    where: { departmentId: manual.id, name: 'HP-01' },
   });
   const machineR2 = await prisma.machine.findFirst({
-    where: { departmentId: manual.id, name: 'R2' },
+    where: { departmentId: manual.id, name: 'HP-02' },
   });
   const machineR3 = await prisma.machine.findFirst({
-    where: { departmentId: manual.id, name: 'R3' },
+    where: { departmentId: manual.id, name: 'HP-03' },
   });
   const machinePolarCutter = await prisma.machine.findFirst({
-    where: { departmentId: manual.id, name: 'Polar Cutter' },
+    where: { departmentId: manual.id, name: 'PC-01' },
   });
   const machineMB01 = await prisma.machine.findFirst({
-    where: { departmentId: manual.id, name: 'MB01' },
+    where: { departmentId: manual.id, name: 'MBO-01' },
   });
   const machineMB02 = await prisma.machine.findFirst({
-    where: { departmentId: manual.id, name: 'MB02' },
+    where: { departmentId: manual.id, name: 'MBO-02' },
   });
   const machineMullerMartini = await prisma.machine.findFirst({
-    where: { departmentId: manual.id, name: 'Muller Martini' },
+    where: { departmentId: manual.id, name: 'MM-01' },
   });
 
   // Item1 is FOLDED: Printing → Pre-Fold/Inspection → Trimming → Folding → Inspection
@@ -289,7 +302,7 @@ async function main() {
   console.log('Creating notes...');
   await prisma.note.create({
     data: {
-      content: 'Production started on schedule. Machine TW102 operating normally.',
+      content: 'Production started on schedule. Machine HP-01 operating normally.',
       itemId: item1.id,
       userId: lineLeader.id,
     },
@@ -305,9 +318,9 @@ async function main() {
 
   console.log('✅ Database seeded successfully!');
   console.log('\n📧 Test Accounts:');
-  console.log('Admin: admin@cpt.com / password123');
-  console.log('Line Leader: lineleader@cpt.com / password123');
-  console.log('Encoder: encoder@cpt.com / password123');
+  console.log('Admin: admin@cpt.com / 1234');
+  console.log('Line Leader: lineleader@cpt.com / 1234');
+  console.log('Encoder: encoder@cpt.com / 1234');
 }
 
 main()

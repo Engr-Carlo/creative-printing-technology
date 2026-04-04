@@ -74,129 +74,272 @@ function ElapsedTime({ startedAt }: { startedAt: string }) {
   );
 }
 
-// ── SVG Machine Illustrations ────────────────────────────────────────────────
+// ── 3D Isometric Machine Illustrations ───────────────────────────────────────
+// Each machine uses an isometric projection:
+//   - ISO top face:  skewX(-30) scaleY(0.866)
+//   - ISO left face: skewY(30) scaleX(0.866)  + dark fill
+//   - ISO right face:skewY(-30) scaleX(0.866) + darkest fill
+// Animated with CSS keyframes in globals.css
 
 function MachineSVG({ type, status }: { type: string; status: MachineStatus }) {
   const busy     = status === "BUSY";
   const inactive = status === "INACTIVE";
-  const c        = busy ? "#f97316" : inactive ? "#374151" : getAccent(type);
-  const op       = inactive ? 0.3 : 1;
+  const base     = busy ? "#f97316" : inactive ? "#374151" : getAccent(type);
+  const op       = inactive ? 0.25 : 1;
+
+  // Derived shades from base colour for isometric faces
+  const face    = base;          // top face  – brightest
+  const dark    = base + "99";   // left face – mid
+  const darker  = base + "55";   // right face – darkest
 
   if (type === "Printing Press") {
+    // Isometric printing press with two rollers and a paper path
     return (
-      <svg viewBox="0 0 140 90" className="w-full h-full" style={{ opacity: op }}>
-        <rect x="8" y="8" width="124" height="74" rx="4" fill="none" stroke={c} strokeWidth="1" opacity="0.15"/>
-        <ellipse cx="70" cy="33" rx="52" ry="14" fill="#0f172a" stroke={c} strokeWidth="1.5"/>
-        <ellipse cx="70" cy="31" rx="52" ry="6"  fill="none"   stroke={c} strokeWidth="0.75" opacity="0.45"/>
-        <ellipse cx="18"  cy="33" rx="4" ry="14" fill="#1e293b" stroke={c} strokeWidth="1"/>
-        <ellipse cx="122" cy="33" rx="4" ry="14" fill="#1e293b" stroke={c} strokeWidth="1"/>
-        <rect x="15" y="45" width="110" height="3" rx="1"
-          fill={busy ? c : "white"} opacity={busy ? 0.9 : 0.18}/>
+      <svg viewBox="0 0 160 110" className="w-full h-full" style={{ opacity: op }} overflow="visible">
+        {/* Floor shadow */}
+        <ellipse cx="80" cy="98" rx="54" ry="10" fill={face} className={busy ? "dt-glow-pulse" : ""} opacity="0.12"/>
+
+        {/* ── Machine body (isometric box) ── */}
+        {/* Right face */}
+        <polygon points="120,30 136,40 136,78 120,68" fill={darker} stroke={face} strokeWidth="0.6"/>
+        {/* Left face */}
+        <polygon points="24,40 40,30 120,30 104,40" fill={dark}   stroke={face} strokeWidth="0.6"/>
+        {/* Top face */}
+        <polygon points="24,40 104,40 120,30 40,30" fill={face}   stroke={face} strokeWidth="0.6" opacity="0.18"/>
+        {/* Front face (main) */}
+        <polygon points="24,40 24,78 104,78 104,40" fill="#0f172a" stroke={face} strokeWidth="1"/>
+
+        {/* ── Top roller (isometric cylinder) ── */}
+        <g className={busy ? "dt-roller-spin" : ""} style={{ transformOrigin: "64px 39px" }}>
+          <ellipse cx="64" cy="33" rx="42" ry="10" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
+          <ellipse cx="64" cy="31" rx="42" ry="5"  fill="none"    stroke={face} strokeWidth="0.6" opacity="0.5"/>
+          <rect x="22" y="33" width="84" height="12" fill="#0f172a" stroke={face} strokeWidth="1"/>
+          <ellipse cx="64" cy="45" rx="42" ry="10" fill="#1e293b" stroke={face} strokeWidth="1.2"/>
+          <ellipse cx="22" cy="39" rx="4"  ry="10" fill="#1a2744" stroke={face} strokeWidth="0.8"/>
+          <ellipse cx="106" cy="39" rx="4" ry="10" fill="#1a2744" stroke={face} strokeWidth="0.8"/>
+        </g>
+
+        {/* ── Paper / substrate between rollers ── */}
+        <rect x="22" y="47" width="84" height="4" rx="1"
+          fill={busy ? face : "white"} opacity={busy ? 0.85 : 0.15}
+          className={busy ? "dt-feed" : ""} strokeDasharray={busy ? "8 4" : "0"} strokeDashoffset="0"/>
+
+        {/* ── Bottom roller ── */}
+        <g className={busy ? "dt-roller-spin" : ""} style={{ transformOrigin: "64px 62px", animationDirection: "reverse" }}>
+          <ellipse cx="64" cy="57" rx="42" ry="10" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
+          <ellipse cx="64" cy="55" rx="42" ry="5"  fill="none"    stroke={face} strokeWidth="0.6" opacity="0.5"/>
+          <rect x="22" y="57" width="84" height="10" fill="#0f172a" stroke={face} strokeWidth="1"/>
+          <ellipse cx="64" cy="67" rx="42" ry="10" fill="#1e293b" stroke={face} strokeWidth="1.2"/>
+          <ellipse cx="22"  cy="62" rx="4" ry="10" fill="#1a2744" stroke={face} strokeWidth="0.8"/>
+          <ellipse cx="106" cy="62" rx="4" ry="10" fill="#1a2744" stroke={face} strokeWidth="0.8"/>
+        </g>
+
+        {/* Ink marks on paper when BUSY */}
         {busy && (
           <>
-            <rect x="32" y="42" width="13" height="9" rx="1" fill={c} opacity="0.7"/>
-            <rect x="64" y="42" width="13" height="9" rx="1" fill={c} opacity="0.7"/>
-            <rect x="96" y="42" width="13" height="9" rx="1" fill={c} opacity="0.7"/>
+            <rect x="36" y="46" width="10" height="6" rx="1" fill={face} opacity="0.75"/>
+            <rect x="58" y="46" width="10" height="6" rx="1" fill={face} opacity="0.75"/>
+            <rect x="80" y="46" width="10" height="6" rx="1" fill={face} opacity="0.75"/>
           </>
         )}
-        <ellipse cx="70" cy="57" rx="52" ry="14" fill="#0f172a" stroke={c} strokeWidth="1.5"/>
-        <ellipse cx="70" cy="55" rx="52" ry="6"  fill="none"   stroke={c} strokeWidth="0.75" opacity="0.45"/>
-        <ellipse cx="18"  cy="57" rx="4" ry="14" fill="#1e293b" stroke={c} strokeWidth="1"/>
-        <ellipse cx="122" cy="57" rx="4" ry="14" fill="#1e293b" stroke={c} strokeWidth="1"/>
-        <rect x="15" y="74" width="110" height="3" rx="1" fill="white" opacity="0.1"/>
-        <rect x="15" y="78" width="110" height="2" rx="1" fill="white" opacity="0.07"/>
+
+        {/* Output sheet stack on bed */}
+        <rect x="22" y="75" width="84" height="4" rx="1" fill="white" opacity="0.08"/>
+        <rect x="22" y="80" width="84" height="2" rx="1" fill="white" opacity="0.05"/>
+
+        {/* Isometric side detail lines */}
+        <line x1="120" y1="30" x2="120" y2="68" stroke={face} strokeWidth="0.5" opacity="0.3"/>
+        <line x1="40"  y1="30" x2="40"  y2="78" stroke={face} strokeWidth="0.5" opacity="0.2"/>
       </svg>
     );
   }
 
   if (type === "Cutting Machine") {
-    const bladeY = busy ? 44 : 18;
+    // Isometric guillotine cutter — blade animates drop when BUSY
     return (
-      <svg viewBox="0 0 140 90" className="w-full h-full" style={{ opacity: op }}>
-        <rect x="14"  y="12" width="12" height="52" rx="2" fill="#0f172a" stroke={c} strokeWidth="1" opacity="0.6"/>
-        <rect x="114" y="12" width="12" height="52" rx="2" fill="#0f172a" stroke={c} strokeWidth="1" opacity="0.6"/>
-        <rect x="10" y="6" width="120" height="12" rx="3" fill="#0f172a" stroke={c} strokeWidth="1.5"/>
-        <rect x="20" y={bladeY - 6} width="100" height="7" rx="2" fill="#1e293b" stroke={c} strokeWidth="1.5"/>
-        <path d={`M 20 ${bladeY + 1} L 120 ${bladeY + 1} L 118 ${bladeY + 9} L 22 ${bladeY + 9} Z`}
-          fill={c} opacity="0.85"/>
-        <rect x="14" y="62" width="112" height="16" rx="2" fill="#0f172a" stroke={c} strokeWidth="1.5"/>
-        <rect x="22" y="58" width="96" height="4" rx="1" fill="white" opacity="0.14"/>
-        <rect x="22" y="61" width="96" height="2" rx="1" fill="white" opacity="0.09"/>
-        {[35, 52, 70, 88, 105].map((x) => (
-          <line key={x} x1={x} y1="64" x2={x} y2="68" stroke={c} strokeWidth="0.5" opacity="0.4"/>
+      <svg viewBox="0 0 160 110" className="w-full h-full" style={{ opacity: op }} overflow="visible">
+        {/* Floor shadow */}
+        <ellipse cx="80" cy="100" rx="50" ry="9" fill={face} className={busy ? "dt-glow-pulse" : ""} opacity="0.12"/>
+
+        {/* ── Cutting bed (isometric box) ── */}
+        <polygon points="24,72 40,62 120,62 104,72" fill={dark}   stroke={face} strokeWidth="0.6"/>
+        <polygon points="120,62 136,72 136,88 120,78" fill={darker} stroke={face} strokeWidth="0.6"/>
+        <rect x="24" y="72" width="96" height="18" fill="#0f172a" stroke={face} strokeWidth="1"/>
+
+        {/* Paper stack on bed */}
+        <polygon points="28,70 44,60 116,60 100,70" fill="white" opacity="0.08" stroke={face} strokeWidth="0.4"/>
+        <polygon points="28,67 44,57 116,57 100,67" fill="white" opacity="0.05"/>
+
+        {/* Scale ticks on bed */}
+        {[40,55,70,85,100].map((x) => (
+          <line key={x} x1={x} y1="72" x2={x} y2="76" stroke={face} strokeWidth="0.8" opacity="0.35"/>
         ))}
+
+        {/* ── Left column ── */}
+        <polygon points="22,12 30,8 30,68 22,72" fill={dark} stroke={face} strokeWidth="0.8"/>
+        <rect x="14" y="12" width="16" height="60" fill="#0f172a" stroke={face} strokeWidth="1"/>
+
+        {/* ── Right column ── */}
+        <polygon points="114,12 122,8 122,68 114,72" fill={dark} stroke={face} strokeWidth="0.8"/>
+        <rect x="114" y="12" width="16" height="60" fill="#0f172a" stroke={face} strokeWidth="1"/>
+
+        {/* ── Top crossbar ── */}
+        <polygon points="22,8 30,4 138,4 130,8"     fill={face}   stroke={face} strokeWidth="0.6" opacity="0.4"/>
+        <rect x="14" y="8" width="124" height="10" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
+
+        {/* ── Animated blade group ── */}
+        <g className={busy ? "dt-blade-drop" : ""}>
+          {/* Beam */}
+          <rect x="22" y="22" width="100" height="9" rx="2" fill="#1e293b" stroke={face} strokeWidth="1.2"/>
+          {/* Blade bevel — isometric wedge */}
+          <polygon points="22,31 122,31 120,42 24,42" fill={face} opacity="0.85"/>
+          <line x1="22" y1="31" x2="122" y2="31" stroke="white" strokeWidth="0.6" opacity="0.4"/>
+        </g>
       </svg>
     );
   }
 
   if (type === "Folding Machine") {
+    // Isometric folder — zigzag paper path through rollers
     return (
-      <svg viewBox="0 0 140 90" className="w-full h-full" style={{ opacity: op }}>
-        <rect x="8" y="16" width="124" height="56" rx="4" fill="#0f172a" stroke={c} strokeWidth="1.5" opacity="0.4"/>
-        <ellipse cx="20"  cy="44" rx="8" ry="22" fill="#0f172a" stroke={c} strokeWidth="1.5"/>
-        <ellipse cx="20"  cy="42" rx="3" ry="9"  fill="none"   stroke={c} strokeWidth="0.75" opacity="0.4"/>
-        <ellipse cx="120" cy="44" rx="8" ry="22" fill="#0f172a" stroke={c} strokeWidth="1.5"/>
-        <ellipse cx="120" cy="42" rx="3" ry="9"  fill="none"   stroke={c} strokeWidth="0.75" opacity="0.4"/>
-        {[50, 70, 90].map((x) => (
-          <line key={x} x1={x} y1="18" x2={x} y2="70" stroke={c} strokeWidth="0.75" strokeDasharray="3 2" opacity="0.3"/>
+      <svg viewBox="0 0 160 110" className="w-full h-full" style={{ opacity: op }} overflow="visible">
+        {/* Floor shadow */}
+        <ellipse cx="80" cy="100" rx="56" ry="9" fill={face} className={busy ? "dt-glow-pulse" : ""} opacity="0.12"/>
+
+        {/* ── Machine body ── */}
+        <polygon points="24,38 40,28 136,28 120,38" fill={face}   stroke={face} strokeWidth="0.6" opacity="0.2"/>
+        <polygon points="120,28 136,38 136,80 120,70" fill={darker} stroke={face} strokeWidth="0.6"/>
+        <polygon points="24,38 40,28 40,70 24,80" fill={dark}   stroke={face} strokeWidth="0.6"/>
+        <rect x="24" y="38" width="96" height="34" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
+
+        {/* ── Left feed roller (isometric cylinder vertical) ── */}
+        <ellipse cx="32" cy="53" rx="6" ry="20" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
+        <ellipse cx="32" cy="51" rx="2.5" ry="8" fill="none"    stroke={face} strokeWidth="0.5" opacity="0.4"/>
+
+        {/* ── Right exit roller ── */}
+        <ellipse cx="128" cy="53" rx="6" ry="20" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
+        <ellipse cx="128" cy="51" rx="2.5" ry="8" fill="none"   stroke={face} strokeWidth="0.5" opacity="0.4"/>
+
+        {/* ── Fold knife separator lines ── */}
+        {[60, 80, 100].map((x) => (
+          <line key={x} x1={x} y1="40" x2={x} y2="70" stroke={face} strokeWidth="0.7" strokeDasharray="3 2" opacity="0.3"/>
         ))}
+
+        {/* ── Paper zigzag path ── */}
         <polyline
-          points="28,44 44,24 62,64 80,24 98,64 112,44"
-          fill="none" stroke={c} strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round"
-          opacity={busy ? 1 : 0.4}
+          points="38,53 54,35 72,71 90,35 108,71 122,53"
+          fill="none"
+          stroke={busy ? face : "white"}
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity={busy ? 1 : 0.25}
+          className={busy ? "dt-fold-travel" : ""}
+          strokeDasharray={busy ? "120 0" : "4 4"}
         />
+
+        {/* Fold vertex dots when BUSY */}
         {busy && (
           <>
-            <circle cx="44" cy="24" r="3.5" fill={c} opacity="0.85"/>
-            <circle cx="62" cy="64" r="3.5" fill={c} opacity="0.85"/>
-            <circle cx="80" cy="24" r="3.5" fill={c} opacity="0.85"/>
-            <circle cx="98" cy="64" r="3.5" fill={c} opacity="0.85"/>
+            <circle cx="54"  cy="35" r="4" fill={face} opacity="0.9"/>
+            <circle cx="72"  cy="71" r="4" fill={face} opacity="0.9"/>
+            <circle cx="90"  cy="35" r="4" fill={face} opacity="0.9"/>
+            <circle cx="108" cy="71" r="4" fill={face} opacity="0.9"/>
           </>
         )}
+
+        {/* ── Output stack on bed ── */}
+        <polygon points="32,78 48,68 128,68 112,78" fill="white" opacity="0.06"/>
+        <polygon points="32,82 48,72 128,72 112,82" fill="white" opacity="0.04"/>
       </svg>
     );
   }
 
   if (type === "Stitching Machine") {
-    const needleY = busy ? 52 : 42;
+    // Isometric saddle-stitcher — book on curved saddle, needles plunge when BUSY
     return (
-      <svg viewBox="0 0 140 90" className="w-full h-full" style={{ opacity: op }}>
-        <rect x="10" y="74" width="120" height="10" rx="2" fill="#0f172a" stroke={c} strokeWidth="1" opacity="0.5"/>
-        <path d="M 15 68 Q 70 28 125 68" fill="none" stroke={c} strokeWidth="3" opacity="0.7"/>
-        <path d="M 15 68 Q 43 40 70 34 Q 97 40 125 68" fill="none" stroke={c} strokeWidth="1" opacity="0.3"/>
-        <path d="M 20 68 Q 46 44 70 39 Q 94 44 120 68" fill="none" stroke={c} strokeWidth="1" opacity="0.2"/>
-        <rect x="35" y="8" width="14" height="28" rx="3" fill="#0f172a" stroke={c} strokeWidth="1.5"/>
-        <circle cx="42" cy="12" r="3" fill={c} opacity={busy ? 0.9 : 0.4}/>
-        <line x1="42" y1="36" x2="42" y2={needleY} stroke={c} strokeWidth="1.5"/>
-        <path d={`M 40 ${needleY} L 42 ${needleY + 5} L 44 ${needleY}`} fill={c} opacity="0.85"/>
-        <rect x="91" y="8" width="14" height="28" rx="3" fill="#0f172a" stroke={c} strokeWidth="1.5"/>
-        <circle cx="98" cy="12" r="3" fill={c} opacity={busy ? 0.9 : 0.4}/>
-        <line x1="98" y1="36" x2="98" y2={needleY} stroke={c} strokeWidth="1.5"/>
-        <path d={`M 96 ${needleY} L 98 ${needleY + 5} L 100 ${needleY}`} fill={c} opacity="0.85"/>
-        {[22, 35, 48, 62, 75, 88, 102, 115, 128].map((xp, i) => {
-          const t  = (xp - 15) / 110;
-          const sy = 68 - 40 * 4 * t * (1 - t);
-          return <circle key={i} cx={xp} cy={sy} r="2.5" fill={c} opacity={busy ? 0.9 : 0.35}/>;
+      <svg viewBox="0 0 160 110" className="w-full h-full" style={{ opacity: op }} overflow="visible">
+        {/* Floor shadow */}
+        <ellipse cx="80" cy="100" rx="52" ry="9" fill={face} className={busy ? "dt-glow-pulse" : ""} opacity="0.12"/>
+
+        {/* ── Machine base (isometric) ── */}
+        <polygon points="24,82 40,72 136,72 120,82" fill={dark}    stroke={face} strokeWidth="0.6"/>
+        <polygon points="120,72 136,82 136,92 120,82" fill={darker} stroke={face} strokeWidth="0.6"/>
+        <rect x="24" y="82" width="96" height="12" fill="#0f172a" stroke={face} strokeWidth="1"/>
+
+        {/* ── Saddle spine (isometric arc — approximated as polygon) ── */}
+        <path
+          d="M 28 76 Q 80 36 132 76"
+          fill="none"
+          stroke={face}
+          strokeWidth="4"
+          opacity="0.75"
+          strokeLinecap="round"
+        />
+        {/* Book pages on saddle */}
+        <path d="M 28 76 Q 56 48 80 42 Q 104 48 132 76" fill="none" stroke={face} strokeWidth="1.5" opacity="0.35"/>
+        <path d="M 32 76 Q 58 52 80 47 Q 102 52 128 76" fill="none" stroke={face} strokeWidth="1"   opacity="0.2"/>
+        {/* Isometric top pages */}
+        <path d="M 80 36 L 90 32 Q 112 42 132 72 L 120 76 Q 100 48 80 42 Z" fill={face} opacity="0.08"/>
+
+        {/* ── Left stitching head ── */}
+        <polygon points="42,10 52,6 52,42 42,46" fill={dark}   stroke={face} strokeWidth="0.7"/>
+        <rect x="36" y="10" width="16" height="36" rx="3" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
+        <circle cx="44" cy="15" r="3.5" fill={face} opacity={busy ? 1 : 0.35}/>
+        {/* Left needle */}
+        <g className={busy ? "dt-needle-plunge" : ""}>
+          <line x1="44" y1="46" x2="44" y2="60" stroke={face} strokeWidth="2"/>
+          <polygon points="42,60 44,67 46,60" fill={face} opacity="0.9"/>
+        </g>
+
+        {/* ── Right stitching head ── */}
+        <polygon points="106,10 116,6 116,42 106,46" fill={dark}   stroke={face} strokeWidth="0.7"/>
+        <rect x="104" y="10" width="16" height="36" rx="3" fill="#0f172a" stroke={face} strokeWidth="1.2"/>
+        <circle cx="112" cy="15" r="3.5" fill={face} opacity={busy ? 1 : 0.35}/>
+        {/* Right needle */}
+        <g className={busy ? "dt-needle-plunge" : ""} style={{ animationDelay: "0.2s" }}>
+          <line x1="112" y1="46" x2="112" y2="60" stroke={face} strokeWidth="2"/>
+          <polygon points="110,60 112,67 114,60" fill={face} opacity="0.9"/>
+        </g>
+
+        {/* ── Stitch wire dots along spine ── */}
+        {[30, 44, 58, 72, 86, 100, 114, 128].map((xp, i) => {
+          const t  = (xp - 28) / 104;
+          const sy = 76 - 40 * 4 * t * (1 - t);
+          return <circle key={i} cx={xp} cy={sy} r="2.8" fill={face} opacity={busy ? 1 : 0.3}/>;
         })}
       </svg>
     );
   }
 
+  // Other / generic isometric box with rotating gear on top
   return (
-    <svg viewBox="0 0 140 90" className="w-full h-full" style={{ opacity: op }}>
-      <circle cx="70" cy="45" r="28" fill="none" stroke={c} strokeWidth="1.5" opacity="0.5"/>
-      <circle cx="70" cy="45" r="12" fill="none" stroke={c} strokeWidth="1.5"/>
-      {Array.from({ length: 8 }).map((_, i) => {
-        const a  = (i * 45 * Math.PI) / 180;
-        return (
-          <line key={i}
-            x1={70 + Math.cos(a) * 26} y1={45 + Math.sin(a) * 26}
-            x2={70 + Math.cos(a) * 34} y2={45 + Math.sin(a) * 34}
-            stroke={c} strokeWidth="5" strokeLinecap="round"
-          />
-        );
-      })}
+    <svg viewBox="0 0 160 110" className="w-full h-full" style={{ opacity: op }} overflow="visible">
+      <ellipse cx="80" cy="98" rx="44" ry="8" fill={face} opacity="0.1"/>
+      {/* Box right */}
+      <polygon points="110,38 126,48 126,80 110,70" fill={darker} stroke={face} strokeWidth="0.6"/>
+      {/* Box left */}
+      <polygon points="34,48 50,38 110,38 94,48" fill={dark}   stroke={face} strokeWidth="0.6"/>
+      {/* Box front */}
+      <rect x="34" y="48" width="76" height="32" fill="#0f172a" stroke={face} strokeWidth="1"/>
+      {/* Box top */}
+      <polygon points="34,48 50,38 110,38 94,48" fill={face} stroke={face} strokeWidth="0.6" opacity="0.15"/>
+
+      {/* Gear on top face */}
+      <g className={busy ? "dt-gear" : ""} style={{ transformOrigin: "80px 43px" }}>
+        <circle cx="80" cy="43" r="14" fill="none" stroke={face} strokeWidth="1.2" opacity="0.6"/>
+        <circle cx="80" cy="43" r="6"  fill="none" stroke={face} strokeWidth="1.2"/>
+        {Array.from({ length: 8 }).map((_, i) => {
+          const a = (i * 45 * Math.PI) / 180;
+          return (
+            <line key={i}
+              x1={80 + Math.cos(a) * 12} y1={43 + Math.sin(a) * 12}
+              x2={80 + Math.cos(a) * 17} y2={43 + Math.sin(a) * 17}
+              stroke={face} strokeWidth="4" strokeLinecap="round"
+            />
+          );
+        })}
+      </g>
     </svg>
   );
 }
@@ -255,8 +398,12 @@ function MachineCard({
             backgroundSize: "14px 14px",
           }}
         />
-        <div className="absolute inset-0 flex items-center justify-center p-3 pt-4">
-          <MachineSVG type={machine.type} status={status} />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_10%,rgba(255,255,255,0.08),transparent_38%),linear-gradient(180deg,rgba(15,23,42,0.45),rgba(2,6,23,0.9))]" />
+        <div className="dt-panel-scan absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-transparent via-cyan-300/10 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 flex items-center justify-center p-3 pt-4" style={{ perspective: "900px" }}>
+          <div className="dt-machine-stage w-full h-full">
+            <MachineSVG type={machine.type} status={status} />
+          </div>
         </div>
         <div className="absolute top-3 right-3 z-10">
           <div
@@ -471,7 +618,7 @@ function MachineFormDialog({
             </label>
             <input
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              placeholder="e.g. R7, MB05"
+              placeholder="e.g. HP-07, MBO-05"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
