@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { quickGenerateItem } from "@/app/actions/items";
+import { getMachineNames } from "@/app/actions/machines";
 import { Zap, CheckCircle2 } from "lucide-react";
 
 const TYPES = [
@@ -19,6 +20,7 @@ export function QuickGenerateButton() {
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState<{ itemId: string; itemNumber: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dbMachines, setDbMachines] = useState<{ name: string; type: string }[]>([]);
 
   const defaultDeadline = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
 
@@ -46,6 +48,7 @@ export function QuickGenerateButton() {
     setError(null);
     const qty = 1;
     setForm({ type: "SHEETED", name: "", customer: "", quantity: "1", targetOutput: String(qty + 500), estimatedDuration: "", color: "", deadline: defaultDeadline, machines: [] });
+    getMachineNames().then(setDbMachines).catch(() => {});
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -222,24 +225,27 @@ export function QuickGenerateButton() {
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase text-gray-500">Machine</Label>
                 <div className="flex flex-wrap gap-3">
-                  {["Machine 1", "Machine 2", "Machine 3"].map((machine) => (
-                    <label key={machine} className="flex items-center gap-2 cursor-pointer">
+                  {dbMachines.map((machine) => (
+                    <label key={machine.name} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={form.machines.includes(machine)}
+                        checked={form.machines.includes(machine.name)}
                         onChange={(e) => {
                           setForm((f) => ({
                             ...f,
                             machines: e.target.checked
-                              ? [...f.machines, machine]
-                              : f.machines.filter((m) => m !== machine),
+                              ? [...f.machines, machine.name]
+                              : f.machines.filter((m) => m !== machine.name),
                           }));
                         }}
                         className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
                       />
-                      <span className="text-sm">{machine}</span>
+                      <span className="text-sm">{machine.name} <span className="text-xs text-gray-400">({machine.type})</span></span>
                     </label>
                   ))}
+                  {dbMachines.length === 0 && (
+                    <p className="text-xs text-gray-400">No machines found</p>
+                  )}
                 </div>
               </div>
 

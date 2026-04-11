@@ -219,7 +219,7 @@ export async function updateRawMaterials(itemId: string, rawMaterials: string) {
     return { error: "Unauthorized" };
   }
 
-  if (!["APPROVAL", "RELEASE_TO_PRODUCTION", "NOT_AVAILABLE"].includes(rawMaterials)) {
+  if (!["AVAILABLE", "NOT_SUFFICIENT", "RELEASE_TO_PRODUCTION", "OUT_OF_STOCK"].includes(rawMaterials)) {
     return { error: "Invalid raw materials status" };
   }
 
@@ -255,13 +255,13 @@ export async function updateItem(prevState: any, formData: FormData) {
     const targetOutput = parseInt(formData.get("targetOutput") as string);
     const deadline = new Date(formData.get("deadline") as string);
     const color = formData.get("color") as string || null;
-    const rawMaterials = (formData.get("rawMaterials") as string) || "NOT_AVAILABLE";
+    const rawMaterials = (formData.get("rawMaterials") as string) || "AVAILABLE";
 
     if (!["FOLDED", "SHEETED", "STITCHING"].includes(type)) {
       return { error: "Invalid item type." };
     }
 
-    if (!["APPROVAL", "RELEASE_TO_PRODUCTION", "NOT_AVAILABLE"].includes(rawMaterials)) {
+    if (!["AVAILABLE", "NOT_SUFFICIENT", "RELEASE_TO_PRODUCTION", "OUT_OF_STOCK"].includes(rawMaterials)) {
       return { error: "Invalid raw materials status." };
     }
 

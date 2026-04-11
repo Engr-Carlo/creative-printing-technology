@@ -151,6 +151,16 @@ export async function getMachinesData(): Promise<MachineWithStatus[]> {
   });
 }
 
+/** Lightweight list of machine names for dropdowns / quick-generate forms */
+export async function getMachineNames(): Promise<{ name: string; type: string }[]> {
+  const machines = await prisma.machine.findMany({
+    where: { isActive: true },
+    select: { name: true, type: true },
+    orderBy: [{ type: "asc" }, { name: "asc" }],
+  });
+  return machines;
+}
+
 export async function createMachine(data: {
   name: string;
   type: string;

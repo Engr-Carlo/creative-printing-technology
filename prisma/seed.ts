@@ -225,13 +225,14 @@ async function main() {
     where: { departmentId: manual.id, name: 'MM-01' },
   });
 
-  // Item1 is FOLDED: Printing → Pre-Fold/Inspection → Trimming → Folding → Inspection
+  // Item1 is FOLDED: Cutting → Printing → Pre-Fold/Inspection → Trimming → Folding → Inspection
   const foldedProcesses = [
-    { name: 'Printing', order: 1, status: ProcessStatus.COMPLETED, machineId: machineR1?.id },
-    { name: 'Pre-Fold/Inspection', order: 2, status: ProcessStatus.DELAYED, machineId: undefined },
-    { name: 'Trimming', order: 3, status: ProcessStatus.COMPLETED, machineId: machinePolarCutter?.id },
-    { name: 'Folding', order: 4, status: ProcessStatus.DELAYED, machineId: machineMB01?.id },
-    { name: 'Inspection', order: 5, status: ProcessStatus.DELAYED, machineId: undefined },
+    { name: 'Cutting', order: 1, status: ProcessStatus.COMPLETED, machineId: machinePolarCutter?.id },
+    { name: 'Printing', order: 2, status: ProcessStatus.COMPLETED, machineId: machineR1?.id },
+    { name: 'Pre-Fold/Inspection', order: 3, status: ProcessStatus.DELAYED, machineId: undefined },
+    { name: 'Trimming', order: 4, status: ProcessStatus.COMPLETED, machineId: machinePolarCutter?.id },
+    { name: 'Folding', order: 5, status: ProcessStatus.DELAYED, machineId: machineMB01?.id },
+    { name: 'Inspection', order: 6, status: ProcessStatus.DELAYED, machineId: undefined },
   ];
 
   for (const proc of foldedProcesses) {
@@ -244,12 +245,13 @@ async function main() {
     });
   }
 
-  // Item2 is SHEETED: Printing → Pre-Fold/Inspection → Trimming → Inspection
+  // Item2 is SHEETED: Cutting → Printing → Pre-Fold/Inspection → Trimming → Inspection
   const sheetedProcesses = [
-    { name: 'Printing', order: 1, status: ProcessStatus.COMPLETED, machineId: machineR2?.id },
-    { name: 'Pre-Fold/Inspection', order: 2, status: ProcessStatus.COMPLETED, machineId: undefined },
-    { name: 'Trimming', order: 3, status: ProcessStatus.IN_PROGRESS, machineId: machinePolarCutter?.id },
-    { name: 'Inspection', order: 4, status: ProcessStatus.IN_PROGRESS, machineId: undefined },
+    { name: 'Cutting', order: 1, status: ProcessStatus.COMPLETED, machineId: machinePolarCutter?.id },
+    { name: 'Printing', order: 2, status: ProcessStatus.COMPLETED, machineId: machineR2?.id },
+    { name: 'Pre-Fold/Inspection', order: 3, status: ProcessStatus.COMPLETED, machineId: undefined },
+    { name: 'Trimming', order: 4, status: ProcessStatus.IN_PROGRESS, machineId: machinePolarCutter?.id },
+    { name: 'Inspection', order: 5, status: ProcessStatus.IN_PROGRESS, machineId: undefined },
   ];
 
   for (const proc of sheetedProcesses) {
@@ -262,14 +264,15 @@ async function main() {
     });
   }
 
-  // Item3 is STITCHING: Printing → Pre-Fold/Inspection → Trimming → Folding → Stitching → Inspection
+  // Item3 is STITCHING: Cutting → Printing → Pre-Fold/Inspection → Trimming → Folding → Stitching → Inspection
   const stitchingProcesses = [
-    { name: 'Printing', order: 1, status: ProcessStatus.NOT_STARTED, machineId: machineR3?.id },
-    { name: 'Pre-Fold/Inspection', order: 2, status: ProcessStatus.NOT_STARTED, machineId: undefined },
-    { name: 'Trimming', order: 3, status: ProcessStatus.NOT_STARTED, machineId: machinePolarCutter?.id },
-    { name: 'Folding', order: 4, status: ProcessStatus.NOT_STARTED, machineId: machineMB02?.id },
-    { name: 'Stitching', order: 5, status: ProcessStatus.NOT_STARTED, machineId: machineMullerMartini?.id },
-    { name: 'Inspection', order: 6, status: ProcessStatus.NOT_STARTED, machineId: undefined },
+    { name: 'Cutting', order: 1, status: ProcessStatus.NOT_STARTED, machineId: machinePolarCutter?.id },
+    { name: 'Printing', order: 2, status: ProcessStatus.NOT_STARTED, machineId: machineR3?.id },
+    { name: 'Pre-Fold/Inspection', order: 3, status: ProcessStatus.NOT_STARTED, machineId: undefined },
+    { name: 'Trimming', order: 4, status: ProcessStatus.NOT_STARTED, machineId: machinePolarCutter?.id },
+    { name: 'Folding', order: 5, status: ProcessStatus.NOT_STARTED, machineId: machineMB02?.id },
+    { name: 'Stitching', order: 6, status: ProcessStatus.NOT_STARTED, machineId: machineMullerMartini?.id },
+    { name: 'Inspection', order: 7, status: ProcessStatus.NOT_STARTED, machineId: undefined },
   ];
 
   for (const proc of stitchingProcesses) {
